@@ -4,7 +4,7 @@
 - 暂时默认数据存储方式使用`LiteDb`
 - 演示站点 [Gpt-666 AiChat](//ai1.gpt-666.com)
 
-# 配置简单说明（appsettings.json）
+# 配置说明（appsettings.json）
 - `ChatGptWebConfig:OpenAiBaseHost` 自定义Api反代地址，如果部署再国内需要此地址，海外直接为空即可
 - `ChatGptWebConfig:ApiKeys` 支持多Api Key 轮询，视情况使用，建议只配置一个
 - `ChatGptWebConfig:EveryDayFreeTimes` 每天免费共享次数，默认为`100`次
