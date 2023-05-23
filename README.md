@@ -1,8 +1,8 @@
 # chatgpt-web-dotnet-api
-- 适配chatgpt-web的.net6的api，fork仓储地址 [chatgpt-web](//github.com/jkhcc11/chatgpt-web)
+- 适配chatgpt-web的.net6的api，fork仓储地址 [chatgpt-web](//github.com/jkhcc11/chatgpt-web?_blank)
 - 仅实现了`api`,另一种`accessToken ` 暂时未实现
 - 暂时默认数据存储方式使用`LiteDb`
-- 演示站点 [Gpt-666 AiChat](//ai1.gpt-666.com)
+- 演示站点 [Gpt-666 AiChat](//ai1.gpt-666.com?_blank)
 
 # 配置简单说明（appsettings.json）
 - `ChatGptWebConfig:OpenAiBaseHost` 自定义Api反代地址，如果部署再国内需要此地址，海外直接为空即可
@@ -17,6 +17,7 @@
 - [x] 多Key随机轮询（不建议使用，防止封号，视情况使用）
 
 # 待处理
+- [ ] 使用`Actions`发布docker 镜像
 - [ ] 新增访问量统计（百度统计|51la）
 - [ ] 调整卡密检测逻辑
 - [ ] 后台管理
