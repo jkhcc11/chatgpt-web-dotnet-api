@@ -26,6 +26,11 @@
         Year = 366,
 
         /// <summary>
+        /// Gpt4按次
+        /// </summary>
+        PerUse4 = 998,
+
+        /// <summary>
         /// 按次
         /// </summary>
         PerUse = 999,

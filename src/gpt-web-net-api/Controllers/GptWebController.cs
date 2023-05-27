@@ -33,11 +33,13 @@ namespace GptWeb.DotNet.Api.Controllers
         private readonly IMemoryCache _memoryCache;
         private readonly ChatGptWebConfig _chatGptWebConfig;
         private readonly ILogger<GptWebController> _logger;
+        private readonly WebResourceConfig _webResourceConfig;
 
         public GptWebController(IOpenAiHttpApi openAiHttpApi, IGptWebMessageRepository webMessageRepository,
             ILogger<GptWebController> logger, IdGenerateExtension idGenerateExtension,
             IActivationCodeRepository activationCodeRepository, IMemoryCache memoryCache,
             IOptions<ChatGptWebConfig> options,
+            IOptions<WebResourceConfig> recourseOptions,
             IPerUseActivationCodeRecordRepository perUseActivationCodeRecordRepository)
         {
             _openAiHttpApi = openAiHttpApi;
@@ -48,6 +50,7 @@ namespace GptWeb.DotNet.Api.Controllers
             _memoryCache = memoryCache;
             _perUseActivationCodeRecordRepository = perUseActivationCodeRecordRepository;
             _chatGptWebConfig = options.Value;
+            _webResourceConfig = recourseOptions.Value;
         }
 
         /// <summary>
@@ -79,7 +82,7 @@ namespace GptWeb.DotNet.Api.Controllers
         [HttpPost("verify")]
         public async Task<IActionResult> VerifyAsync(VerifyInput input)
         {
-            var check = await CheckCardNoAsync(input.Token);
+            var check = await CheckCardNoAsync(input.Token, "gpt-3");
             if (check.IsSuccess == false)
             {
                 return new JsonResult(check);
@@ -102,7 +105,7 @@ namespace GptWeb.DotNet.Api.Controllers
         public async Task<IActionResult> GetConfigAsync()
         {
             //检测Token
-            var check = await CheckRequestTokenAsync();
+            var check = await CheckRequestTokenAsync("gpt-3");
             if (check.IsSuccess == false)
             {
                 return new JsonResult(new BaseGptWebDto<object>()
@@ -130,7 +133,8 @@ namespace GptWeb.DotNet.Api.Controllers
                     expiryTime = cardInfo.ActivateTime.Value.AddDays(cardInfo.CodeType.GetHashCode())
                         .ToString("yyyy-MM-dd HH:mm:ss"),
                     activedTime = cardInfo.ActivateTime.Value
-                        .ToString("yyyy-MM-dd HH:mm:ss")
+                        .ToString("yyyy-MM-dd HH:mm:ss"),
+                    canModelStr = cardInfo.ModelStr ?? "gpt-3"
                 },
                 ResultCode = KdyResultCode.Success
             };
@@ -148,10 +152,10 @@ namespace GptWeb.DotNet.Api.Controllers
             var writer = new StreamWriter(Response.Body);
 
             //检测Token
-            var check = await CheckRequestTokenAsync();
+            var check = await CheckRequestTokenAsync(input.ApiModel);
             if (check.IsSuccess == false)
             {
-                await writer.WriteLineAsync(Newtonsoft.Json.JsonConvert.SerializeObject(check));
+                await writer.WriteLineAsync(check.ToJsonStr());
                 await writer.FlushAsync();
                 return;
             }
@@ -174,7 +178,10 @@ namespace GptWeb.DotNet.Api.Controllers
             reqMessages.Add(new("user", input.Prompt));
             var request = new SendChatCompletionsRequest(reqMessages)
             {
-                Stream = true
+                Stream = true,
+                Model = input.ApiModel,
+                TopP = input.TopP,
+                Temperature = input.Temperature
             };
 
             if (isFirst == false)
@@ -182,16 +189,21 @@ namespace GptWeb.DotNet.Api.Controllers
                 var assistantMessage = await _webMessageRepository.GetMessageByParentMsgIdAsync(input.Options.ParentMessageId);
                 //todo:回复丢失时 未处理
                 userMessage = await SaveUserMessage(assistantMessage, input.Prompt,
-                    Newtonsoft.Json.JsonConvert.SerializeObject(request));
+                    request.ToJsonStr());
             }
 
             var result = await _openAiHttpApi.SendChatCompletionsAsync(key, request);
             if (result.IsSuccess == false)
             {
                 _logger.LogError("Gpt返回失败，{reqMsg},{responseMsg}",
-                    Newtonsoft.Json.JsonConvert.SerializeObject(request),
-                    Newtonsoft.Json.JsonConvert.SerializeObject(result));
-                await writer.WriteLineAsync(result.Msg);
+                    request.ToJsonStr(),
+                    result.ToJsonStr());
+                var errorResult = new BaseGptWebDto<string>()
+                {
+                    Message = $"OpenAi返回\n\n\n{result.Msg}"
+                };
+
+                await writer.WriteLineAsync(errorResult.ToJsonStr());
                 await writer.FlushAsync();
                 return;
             }
@@ -199,9 +211,14 @@ namespace GptWeb.DotNet.Api.Controllers
             if (result.Data.ResponseStream == null)
             {
                 _logger.LogError("获取相应流失效，{reqMsg},{responseMsg}",
-                    Newtonsoft.Json.JsonConvert.SerializeObject(request),
-                    Newtonsoft.Json.JsonConvert.SerializeObject(result));
-                await writer.WriteLineAsync("no");
+                    request.ToJsonStr(),
+                    result.ToJsonStr());
+                var errorResult = new BaseGptWebDto<string>()
+                {
+                    Message = "服务异常, response stream is null"
+                };
+
+                await writer.WriteLineAsync(errorResult.ToJsonStr());
                 await writer.FlushAsync();
                 return;
             }
@@ -210,23 +227,43 @@ namespace GptWeb.DotNet.Api.Controllers
             {
                 using var reader = new StreamReader(result.Data.ResponseStream);
                 var prefixLength = "data: ".Length;
-                var roleStr = "";
-                var assistantId = "";
-                var response = "";
+                string roleStr = "",
+                assistantId = "",
+                response = "",
+                chatId = "";
                 var currentAnswer = new StringBuilder();
                 while (!reader.EndOfStream)
                 {
-                    #region 流式返回
+                    var currentDelta = "";
                     var line = await reader.ReadLineAsync();
-                    if (string.IsNullOrEmpty(line) ||
-                        line.Contains("[DONE]"))
+                    #region 流式返回
+                    if (string.IsNullOrEmpty(line))
                     {
-                        //结束或者为空不管
+                        //为空不管
                         continue;
                     }
 
                     var jsonStr = line.Remove(0, prefixLength);
-                    var tempData = Newtonsoft.Json.JsonConvert.DeserializeObject<SendChatCompletionsResponse>(jsonStr);
+                    if (jsonStr == _chatGptWebConfig.StopFlag)
+                    {
+                        #region 结束自定义返回
+                        currentDelta = $"\n\n\n\n[系统信息,当前模型：{input.ApiModel}]";
+                        var endResult = new ChatProcessDto()
+                        {
+                            Role = roleStr,
+                            Id = chatId,
+                            Delta = currentDelta,
+                            Text = currentAnswer + currentDelta
+                        };
+
+                        await writer.WriteLineAsync(endResult.ToJsonStr());
+                        await writer.FlushAsync();
+                        continue;
+                        #endregion
+                    }
+
+                    #region 正常内容解析
+                    var tempData = jsonStr.StrToModel<SendChatCompletionsResponse>();
                     if (string.IsNullOrEmpty(assistantId) &&
                         string.IsNullOrEmpty(tempData?.ChatId) == false)
                     {
@@ -235,7 +272,6 @@ namespace GptWeb.DotNet.Api.Controllers
                     }
 
                     var deltaObj = tempData?.Choices.FirstOrDefault()?.DeltaObj;
-                    var currentDelta = "";
                     var roleToken = deltaObj?["role"];
                     if (roleToken != null)
                     {
@@ -249,16 +285,18 @@ namespace GptWeb.DotNet.Api.Controllers
                         currentAnswer.Append(currentDelta);
                     }
 
-                    var newObj = new
+                    chatId = tempData?.ChatId ?? "";
+                    #endregion
+
+                    var currentResult = new ChatProcessDto()
                     {
-                        role = roleStr,
-                        id = tempData?.ChatId,
-                        parentMessageId = "", //
-                        delta = currentDelta,
-                        text = currentAnswer.ToString()
+                        Role = roleStr,
+                        Id = chatId,
+                        Delta = currentDelta,
+                        Text = currentAnswer.ToString()
                     };
 
-                    await writer.WriteLineAsync(Newtonsoft.Json.JsonConvert.SerializeObject(newObj));
+                    await writer.WriteLineAsync(currentResult.ToJsonStr());
                     await writer.FlushAsync();
                     #endregion
                 }
@@ -267,7 +305,7 @@ namespace GptWeb.DotNet.Api.Controllers
                 {
                     await CreateFirstMsgAsync(input.Prompt, currentAnswer.ToString()
                         , assistantId
-                        , Newtonsoft.Json.JsonConvert.SerializeObject(request)
+                        , request.ToJsonStr()
                         , response
                         , input.SystemMessage);
                 }
@@ -287,9 +325,27 @@ namespace GptWeb.DotNet.Api.Controllers
                 //记录
                 await _perUseActivationCodeRecordRepository.CreateAsync(new PerUseActivationCodeRecord(
                     _idGenerateExtension.GenerateId(),
-                    token));
+                    token,
+                    input.ApiModel
+                    ));
             }
 
+        }
+
+        /// <summary>
+        /// 获取全局资源
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("resource")]
+        public async Task<IActionResult> GetResourceAsync()
+        {
+            var result = new BaseGptWebDto<WebResourceConfig>()
+            {
+                Data = _webResourceConfig,
+                ResultCode = KdyResultCode.Success
+            };
+            await Task.CompletedTask;
+            return new JsonResult(result);
         }
 
         #region 私有
@@ -409,8 +465,10 @@ namespace GptWeb.DotNet.Api.Controllers
         /// <summary>
         /// 检测CardNo
         /// </summary>
+        /// <param name="cardNo">卡号</param>
+        /// <param name="modelId">模型Id</param>
         /// <returns></returns>
-        private async Task<BaseGptWebDto<object>> CheckCardNoAsync(string cardNo)
+        private async Task<BaseGptWebDto<object>> CheckCardNoAsync(string cardNo, string modelId)
         {
             var cacheValue = await GetCardInfoByCacheAsync(cardNo);
             if (cacheValue.CodeType == default)
@@ -438,19 +496,42 @@ namespace GptWeb.DotNet.Api.Controllers
                 };
             }
 
-            //按次计算
-            if (cacheValue.CodeType == ActivationCodeType.PerUse)
+            var modelArray = cacheValue.ModelStr.Split(',');
+            if (modelArray.Any(modelId.StartsWith) == false)
             {
-                var count = await _perUseActivationCodeRecordRepository.CountTimesAsync(DateTime.Today, cardNo);
-                if (count > _chatGptWebConfig.EveryDayFreeTimes)
+                return new BaseGptWebDto<object>()
                 {
-                    return new BaseGptWebDto<object>()
-                    {
-                        ResultCode = KdyResultCode.Error,
-                        Message = $"今天免费额度,已用完。免费次数：{_chatGptWebConfig.EveryDayFreeTimes}"
-                    };
-                }
+                    ResultCode = KdyResultCode.Error,
+                    Message = $"当前卡密不支持【{modelId}】,请切换模型或更换卡密，当前支持模型：{cacheValue.ModelStr}"
+                };
             }
+
+            #region 按次计算
+            var limitCount = 1;
+            switch (cacheValue.CodeType)
+            {
+                case ActivationCodeType.PerUse:
+                    {
+                        limitCount = _webResourceConfig.EveryDayFreeTimes;
+                        break;
+                    }
+                case ActivationCodeType.PerUse4:
+                    {
+                        limitCount = _webResourceConfig.EveryDayFreeTimes4;
+                        break;
+                    }
+            }
+
+            var count = await _perUseActivationCodeRecordRepository.CountTimesAsync(DateTime.Today, cardNo);
+            if (count > limitCount)
+            {
+                return new BaseGptWebDto<object>()
+                {
+                    ResultCode = KdyResultCode.Error,
+                    Message = $"今天免费额度,已用完。免费次数：{limitCount}"
+                };
+            } 
+            #endregion
 
             return new BaseGptWebDto<object>()
             {
@@ -461,8 +542,9 @@ namespace GptWeb.DotNet.Api.Controllers
         /// <summary>
         /// 检测请求Token
         /// </summary>
+        /// <param name="modelId">模型Id</param>
         /// <returns></returns>
-        private async Task<BaseGptWebDto<object>> CheckRequestTokenAsync()
+        private async Task<BaseGptWebDto<object>> CheckRequestTokenAsync(string modelId)
         {
             var cardNo = GetCurrentAuthCardNo();
             if (string.IsNullOrEmpty(cardNo))
@@ -473,7 +555,7 @@ namespace GptWeb.DotNet.Api.Controllers
                 };
             }
 
-            var check = await CheckCardNoAsync(cardNo);
+            var check = await CheckCardNoAsync(cardNo, modelId);
             if (check.IsSuccess == false)
             {
                 check.ResultCode = KdyResultCode.Unauthorized;

@@ -36,10 +36,32 @@ namespace GptWeb.DotNet.Api.Controllers
                 return Content("密钥错误");
             }
 
+            //模型校验
+            var modelStr = input.ModelStr;
+            if (string.IsNullOrEmpty(modelStr))
+            {
+                modelStr = "gpt-3";
+            }
+
+            if (modelStr == "gpt-4")
+            {
+                //单独gpt4 添加默认gpt-3
+                modelStr = "gpt-3,gpt-4";
+            }
+
+            var modelArray = modelStr.Split(',');
+            if (modelArray.Any(a => a == "gpt-3") == false &&
+                modelArray.Any(a => a == "gpt-4") == false)
+            {
+                return Content("无效模型");
+            }
+
+
             var resultSb = new StringBuilder();
             resultSb.AppendLine($"本次生成数量：{input.Number},类型：{input.ActivationCodeType.GetHashCode()} 天");
             var dbActivationCode = new List<ActivationCode>();
-            if (input.ActivationCodeType == ActivationCodeType.PerUse)
+            if (input.ActivationCodeType == ActivationCodeType.PerUse ||
+                input.ActivationCodeType == ActivationCodeType.PerUse4)
             {
                 if (string.IsNullOrEmpty(input.FreeCode))
                 {
@@ -47,7 +69,10 @@ namespace GptWeb.DotNet.Api.Controllers
                 }
 
                 dbActivationCode.Add(new ActivationCode(_idGenerateExtension.GenerateId(),
-                    input.FreeCode, input.ActivationCodeType));
+                    input.FreeCode, input.ActivationCodeType)
+                {
+                    ModelStr = modelStr
+                });
                 resultSb.AppendLine(input.FreeCode);
             }
             else
@@ -56,7 +81,10 @@ namespace GptWeb.DotNet.Api.Controllers
                 {
                     var code = Guid.NewGuid().ToString();
                     dbActivationCode.Add(new ActivationCode(_idGenerateExtension.GenerateId(),
-                        code, input.ActivationCodeType));
+                        code, input.ActivationCodeType)
+                    {
+                        ModelStr = modelStr
+                    });
                     resultSb.AppendLine(code);
                 }
             }

@@ -39,6 +39,7 @@ services.AddTransient(_ =>
     return new LogLiteDatabase(connectionString);
 });
 services.Configure<ChatGptWebConfig>(config.GetSection("ChatGptWebConfig"));
+services.Configure<WebResourceConfig>(config.GetSection("WebResource"));
 
 builder.Services.AddCors(options =>
 {

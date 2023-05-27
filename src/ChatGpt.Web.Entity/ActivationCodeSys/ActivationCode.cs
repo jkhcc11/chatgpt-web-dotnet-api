@@ -30,5 +30,13 @@ namespace ChatGpt.Web.Entity.ActivationCodeSys
         /// 激活时间
         /// </summary>
         public DateTime? ActivateTime { get; set; }
+
+        /// <summary>
+        /// 可用模型
+        /// </summary>
+        /// <remarks>
+        /// gpt-3|gpt-4 逗号隔开
+        /// </remarks>
+        public string ModelStr { get; set; } = "gpt-3";
     }
 }

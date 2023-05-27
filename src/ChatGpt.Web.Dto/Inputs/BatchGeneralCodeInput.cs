@@ -35,5 +35,13 @@ namespace ChatGpt.Web.Dto.Inputs
         /// 免费Code
         /// </summary>
         public string? FreeCode { get; set; }
+
+        /// <summary>
+        /// 可用模型
+        /// </summary>
+        /// <remarks>
+        /// gpt-3|gpt-4 逗号隔开
+        /// </remarks>
+        public string ModelStr { get; set; } = "gpt-3";
     }
 }

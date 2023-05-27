@@ -21,13 +21,13 @@ namespace ChatGpt.Web.BaseInterface.Options
         public List<string> ApiKeys { get; set; } = new List<string>();
 
         /// <summary>
-        /// Api超时时间(秒)
+        /// Api超时时间(毫秒)
         /// </summary>
         public int ApiTimeoutMilliseconds { get; set; } = 30000;
 
         /// <summary>
-        /// 每天免费次数
+        /// 流式停止标识
         /// </summary>
-        public int EveryDayFreeTimes { get; set; } = 100;
+        public string StopFlag { get; set; } = "[DONE]";
     }
 }

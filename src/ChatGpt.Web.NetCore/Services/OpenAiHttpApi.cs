@@ -57,7 +57,8 @@ namespace ChatGpt.Web.NetCore.Services
             {
                 var errorInfo = await apiResponse.Content.ReadAsStringAsync();
                 _logger.LogWarning($"{requestUrl} 返回：{errorInfo}");
-                return KdyResult.Error<SendChatCompletionsResponse>(KdyResultCode.HttpError, apiResponse.StatusCode.ToString());
+                return KdyResult.Error<SendChatCompletionsResponse>(KdyResultCode.HttpError,
+                    errorInfo ?? apiResponse.StatusCode.ToString());
             }
 
             if (request.Stream)

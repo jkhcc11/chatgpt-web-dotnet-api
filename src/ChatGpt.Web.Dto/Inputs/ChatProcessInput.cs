@@ -20,6 +20,23 @@
         /// </summary>
         public string SystemMessage { get; set; } =
             "You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible.";
+        
+        /// <summary>
+        /// Api模型
+        /// </summary>
+        public string ApiModel { get; set; } = "gpt-3.5-turbo";
+
+        /// <summary>
+        /// 0 和 2 之间。
+        /// 较高的值（如 0.8）将使输出更加随机，而较低的值（如 0.2）将使输出更加集中和确定
+        /// </summary>
+        public decimal Temperature { get; set; } = 0.8M;
+
+        /// <summary>
+        /// 对应Temperature的质量
+        /// 改变这个或temperature但不是两者
+        /// </summary>
+        public decimal TopP { get; set; } = 1;
     }
 
     public class ChatProcessOption
