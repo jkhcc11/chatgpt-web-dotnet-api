@@ -161,7 +161,7 @@ namespace GptWeb.DotNet.Api.Controllers
             }
 
             var token = GetCurrentAuthCardNo();
-            var key = _chatGptWebConfig.ApiKeys.RandomList();
+            var keyItem = _chatGptWebConfig.ApiKeys.RandomList();
             var isFirst = string.IsNullOrEmpty(input.Options.ParentMessageId);
             var reqMessages = new List<SendChatCompletionsMessageItem>()
             {
@@ -192,7 +192,8 @@ namespace GptWeb.DotNet.Api.Controllers
                     request.ToJsonStr());
             }
 
-            var result = await _openAiHttpApi.SendChatCompletionsAsync(key, request);
+            var result = await _openAiHttpApi.SendChatCompletionsAsync(keyItem.ApiKey, request,
+                keyItem.OrgId);
             if (result.IsSuccess == false)
             {
                 _logger.LogError("Gpt∑µªÿ ß∞‹£¨{reqMsg},{responseMsg}",

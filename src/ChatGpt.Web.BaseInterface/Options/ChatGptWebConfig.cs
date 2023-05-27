@@ -18,7 +18,7 @@ namespace ChatGpt.Web.BaseInterface.Options
         /// <summary>
         /// ApiKey多个
         /// </summary>
-        public List<string> ApiKeys { get; set; } = new List<string>();
+        public List<ApiKeyItem> ApiKeys { get; set; } = new List<ApiKeyItem>();
 
         /// <summary>
         /// Api超时时间(毫秒)
@@ -29,5 +29,24 @@ namespace ChatGpt.Web.BaseInterface.Options
         /// 流式停止标识
         /// </summary>
         public string StopFlag { get; set; } = "[DONE]";
+    }
+
+    /// <summary>
+    /// ApiKey Item
+    /// </summary>
+    public class ApiKeyItem
+    {
+        /// <summary>
+        /// ApiKey
+        /// </summary>
+        public string ApiKey { get; set; } = "";
+
+        /// <summary>
+        /// 组织Id
+        /// </summary>
+        /// <remarks>
+        ///  只有一个组织时 可不用配置
+        /// </remarks>
+        public string? OrgId { get; set; }
     }
 }

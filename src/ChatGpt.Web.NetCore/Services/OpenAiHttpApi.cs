@@ -34,10 +34,19 @@ namespace ChatGpt.Web.NetCore.Services
         /// <summary>
         /// 发起聊天
         /// </summary>
+        /// <param name="apiKey">key</param>
+        /// <param name="request"></param>
+        /// <param name="orgId">组织Id</param>
         /// <returns></returns>
-        public async Task<KdyResult<SendChatCompletionsResponse>> SendChatCompletionsAsync(string apiKey, SendChatCompletionsRequest request)
+        public async Task<KdyResult<SendChatCompletionsResponse>> SendChatCompletionsAsync(string apiKey,
+            SendChatCompletionsRequest request, string? orgId = null)
         {
             var client = BuildClient();
+            if (string.IsNullOrEmpty(orgId) == false)
+            {
+                client.DefaultRequestHeaders.Add("OpenAI-Organization", orgId);
+            }
+
             var requestUrl = "/v1/chat/completions";
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 

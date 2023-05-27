@@ -41,9 +41,10 @@ services.AddTransient(_ =>
 services.Configure<ChatGptWebConfig>(config.GetSection("ChatGptWebConfig"));
 services.Configure<WebResourceConfig>(config.GetSection("WebResource"));
 
+var defaultPolicy = "AiCorsPolicy";
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(corsBuilder =>
+    options.AddPolicy(defaultPolicy, corsBuilder =>
     {
         corsBuilder.WithOrigins(config.GetValue<string>("CorsHosts").Split(","))
             .AllowAnyHeader()
@@ -55,7 +56,7 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 app.UseAuthorization();
-app.UseCors();
+app.UseCors(defaultPolicy);
 
 app.MapControllers();
 app.Run();
