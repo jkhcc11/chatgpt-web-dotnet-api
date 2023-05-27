@@ -58,11 +58,12 @@ namespace GptWeb.DotNet.Api.Controllers
 
 
             var resultSb = new StringBuilder();
-            resultSb.AppendLine($"本次生成数量：{input.Number},类型：{input.ActivationCodeType.GetHashCode()} 天");
+            resultSb.AppendLine($"本次生成数量：{input.Number},类型：{input.ActivationCodeType.GetValidDaysByCodeType()} 天");
             var dbActivationCode = new List<ActivationCode>();
             if (input.ActivationCodeType == ActivationCodeType.PerUse ||
                 input.ActivationCodeType == ActivationCodeType.PerUse4)
             {
+                #region 体验卡
                 if (string.IsNullOrEmpty(input.FreeCode))
                 {
                     return Content("无卡密");
@@ -73,10 +74,12 @@ namespace GptWeb.DotNet.Api.Controllers
                 {
                     ModelStr = modelStr
                 });
-                resultSb.AppendLine(input.FreeCode);
+                resultSb.AppendLine(input.FreeCode); 
+                #endregion
             }
             else
             {
+                #region 生成数量
                 for (var i = 0; i < input.Number; i++)
                 {
                     var code = Guid.NewGuid().ToString();
@@ -86,7 +89,8 @@ namespace GptWeb.DotNet.Api.Controllers
                         ModelStr = modelStr
                     });
                     resultSb.AppendLine(code);
-                }
+                } 
+                #endregion
             }
 
             await _activationCodeRepository.CreateAsync(dbActivationCode);
@@ -108,7 +112,8 @@ namespace GptWeb.DotNet.Api.Controllers
             foreach (var item in activationCode)
             {
                 resultSb.AppendLine($"卡号：{item.CardNo}，" +
-                                    $"类型：{(item.CodeType.GetHashCode())}天 体验卡，" +
+                                    $"类型：{(item.CodeType.GetValidDaysByCodeType())}天 体验卡，" +
+                                    $"模型：{(item.ModelStr)}天，" +
                                     $"是否激活：{(item.ActivateTime.HasValue ? "是" : "否")}，" +
                                     $"创建时间：{item.CreatedTime}，" +
                                     $"激活时间：{(item.ActivateTime?.ToString())}");

@@ -486,7 +486,7 @@ namespace GptWeb.DotNet.Api.Controllers
                 await _activationCodeRepository.UpdateAsync(cacheValue);
             }
 
-            var expiryTime = cacheValue.ActivateTime.Value.AddDays(cacheValue.CodeType.GetHashCode());
+            var expiryTime = cacheValue.ActivateTime.Value.AddDays(cacheValue.CodeType.GetValidDaysByCodeType());
             if (DateTime.Now > expiryTime)
             {
                 return new BaseGptWebDto<object>()
@@ -530,7 +530,7 @@ namespace GptWeb.DotNet.Api.Controllers
                     ResultCode = KdyResultCode.Error,
                     Message = $"今天免费额度,已用完。免费次数：{limitCount}"
                 };
-            } 
+            }
             #endregion
 
             return new BaseGptWebDto<object>()
