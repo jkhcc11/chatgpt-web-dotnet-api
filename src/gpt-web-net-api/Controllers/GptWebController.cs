@@ -508,7 +508,7 @@ namespace GptWeb.DotNet.Api.Controllers
             }
 
             #region 按次计算
-            var limitCount = 1;
+            int? limitCount = null;
             switch (cacheValue.CodeType)
             {
                 case ActivationCodeType.PerUse:
@@ -523,15 +523,20 @@ namespace GptWeb.DotNet.Api.Controllers
                     }
             }
 
-            var count = await _perUseActivationCodeRecordRepository.CountTimesAsync(DateTime.Today, cardNo);
-            if (count > limitCount)
+            if (limitCount is > 0)
             {
-                return new BaseGptWebDto<object>()
+                //按次计费
+                var count = await _perUseActivationCodeRecordRepository.CountTimesAsync(DateTime.Today, cardNo);
+                if (count > limitCount)
                 {
-                    ResultCode = KdyResultCode.Error,
-                    Message = $"今天免费额度,已用完。免费次数：{limitCount}"
-                };
+                    return new BaseGptWebDto<object>()
+                    {
+                        ResultCode = KdyResultCode.Error,
+                        Message = $"今天免费额度,已用完。免费次数：{limitCount}"
+                    };
+                }
             }
+
             #endregion
 
             return new BaseGptWebDto<object>()
