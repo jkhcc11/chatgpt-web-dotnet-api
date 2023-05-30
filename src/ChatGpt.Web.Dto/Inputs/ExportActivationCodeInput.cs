@@ -1,7 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using ChatGpt.Web.Entity.Enums;
-
-namespace ChatGpt.Web.Dto.Inputs
+﻿namespace ChatGpt.Web.Dto.Inputs
 {
     /// <summary>
     /// 导出卡密
@@ -19,9 +16,8 @@ namespace ChatGpt.Web.Dto.Inputs
         public string GeneralCodeKey { get; set; }
 
         /// <summary>
-        /// 卡密类型
+        /// 卡密类型Id
         /// </summary>
-        [EnumDataType(typeof(ActivationCodeType), ErrorMessage = "卡密类型错误")]
-        public ActivationCodeType? ActivationCodeType { get; set; }
+        public long? CodeTypeId { get; set; }
     }
 }

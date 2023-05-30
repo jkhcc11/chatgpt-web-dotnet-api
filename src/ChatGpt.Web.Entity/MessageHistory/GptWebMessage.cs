@@ -15,12 +15,14 @@ namespace ChatGpt.Web.Entity.MessageHistory
         /// <param name="msg">消息</param>
         /// <param name="msgType">消息类型</param>
         /// <param name="conversationId">会话Id</param>
+        /// <param name="activationCode">卡密</param>
         public GptWebMessage(long id, string msg,
-            MsgType msgType, long conversationId) : base(id)
+            MsgType msgType, long conversationId, string activationCode) : base(id)
         {
             Msg = msg;
             MsgType = msgType;
             ConversationId = conversationId;
+            ActivationCode = activationCode;
         }
 
         /// <summary>
@@ -60,5 +62,15 @@ namespace ChatGpt.Web.Entity.MessageHistory
         /// Gpt返回详情
         /// </summary>
         public string? GtpResponse { get; set; }
+
+        /// <summary>
+        /// 消耗Tokens
+        /// </summary>
+        public int Tokens { get; set; }
+
+        /// <summary>
+        /// 卡密
+        /// </summary>
+        public string ActivationCode { get; set; }
     }
 }

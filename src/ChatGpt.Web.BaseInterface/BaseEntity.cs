@@ -7,6 +7,11 @@ namespace ChatGpt.Web.BaseInterface
     /// </summary>
     public abstract class BaseEntity<TKey>
     {
+        protected BaseEntity()
+        {
+
+        }
+
         protected BaseEntity(TKey id)
         {
             Id = id;

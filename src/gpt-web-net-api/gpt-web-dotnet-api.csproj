@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.15.1" />
+    <PackageReference Include="AI.Dev.OpenAI.GPT" Version="1.0.2" />
   </ItemGroup>
 
   <ItemGroup>

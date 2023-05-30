@@ -16,11 +16,21 @@ namespace ChatGpt.Web.IRepository.ActivationCodeSys
         Task<bool> CreateAsync(PerUseActivationCodeRecord entity);
 
         /// <summary>
-        /// 根据日期统计次数
+        /// 根据日期模型分组统计次数
         /// </summary>
         /// <param name="date">日期</param>
         /// <param name="cardNo">卡号</param>
+        /// <param name="modelGroupName">模型分组名</param>
         /// <returns></returns>
-        Task<int> CountTimesAsync(DateTime date, string cardNo);
+        Task<int> CountTimesByGroupNameAsync(DateTime date, string cardNo, string modelGroupName);
+
+        /// <summary>
+        /// 根据日期模型Id统计次数
+        /// </summary>
+        /// <param name="date">日期</param>
+        /// <param name="cardNo">卡号</param>
+        /// <param name="modelId">模型ID</param>
+        /// <returns></returns>
+        Task<int> CountTimesByModelIdAsync(DateTime date, string cardNo, string modelId);
     }
 }

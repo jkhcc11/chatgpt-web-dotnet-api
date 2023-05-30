@@ -8,10 +8,9 @@ namespace ChatGpt.Web.Dto.Inputs
     /// </summary>
     public class BatchGeneralCodeInput
     {
-        public BatchGeneralCodeInput(string generalCodeKey, ActivationCodeType activationCodeType)
+        public BatchGeneralCodeInput(string generalCodeKey)
         {
             GeneralCodeKey = generalCodeKey;
-            ActivationCodeType = activationCodeType;
         }
 
         /// <summary>
@@ -20,28 +19,14 @@ namespace ChatGpt.Web.Dto.Inputs
         public string GeneralCodeKey { get; set; }
 
         /// <summary>
-        /// 卡密类型
+        /// 类型Id
         /// </summary>
-        [EnumDataType(typeof(ActivationCodeType), ErrorMessage = "卡密类型错误")]
-        public ActivationCodeType ActivationCodeType { get; set; }
+        public long CodeTypeId { get; set; }
 
         /// <summary>
         /// 生成数量
         /// </summary>
         [Range(1, 500, ErrorMessage = "最大500")]
         public int Number { get; set; } = 10;
-
-        /// <summary>
-        /// 免费Code
-        /// </summary>
-        public string? FreeCode { get; set; }
-
-        /// <summary>
-        /// 可用模型
-        /// </summary>
-        /// <remarks>
-        /// gpt-3|gpt-4 逗号隔开
-        /// </remarks>
-        public string ModelStr { get; set; } = "gpt-3";
     }
 }

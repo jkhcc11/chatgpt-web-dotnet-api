@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ChatGpt.Web.Entity.ActivationCodeSys;
-using ChatGpt.Web.Entity.Enums;
 using ChatGpt.Web.IRepository.ActivationCodeSys;
 
 namespace ChatGpt.Web.LiteDatabase.Repository
@@ -68,19 +67,31 @@ namespace ChatGpt.Web.LiteDatabase.Repository
         /// <summary>
         ///  根据类型获取卡密
         /// </summary>
-        /// <param name="codeType">卡密类型</param>
+        /// <param name="codeTypeId">卡密类型ID</param>
         /// <returns></returns>
-        public async Task<List<ActivationCode>> QueryActivationCodeByTypeAsync(ActivationCodeType? codeType)
+        public async Task<List<ActivationCode>> QueryActivationCodeByTypeAsync(long? codeTypeId)
         {
             var col = _liteDatabase.GetCollection<ActivationCode>(TableName);
             var query = col.Query();
-            if (codeType.HasValue)
+            if (codeTypeId.HasValue)
             {
-                query = query.Where(a => a.CodeType == codeType.Value);
+                query = query.Where(a => a.CodyTypeId == codeTypeId.Value);
             }
 
             await Task.CompletedTask;
             return query.ToList();
+        }
+
+        /// <summary>
+        /// 删除
+        /// </summary>
+        /// <returns></returns>
+        public async Task<bool> DeleteAsync(ActivationCode entity)
+        {
+            var col = _liteDatabase.GetCollection<ActivationCode>(TableName);
+            col.DeleteMany(a => a.CardNo == entity.CardNo);
+            await Task.CompletedTask;
+            return true;
         }
     }
 }

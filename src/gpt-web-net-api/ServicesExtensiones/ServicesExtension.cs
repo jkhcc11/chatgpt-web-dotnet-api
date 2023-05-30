@@ -17,6 +17,8 @@ namespace GptWeb.DotNet.Api.ServicesExtensiones
             services.AddTransient<IGptWebMessageRepository, GptWebMessageRepository>();
             services.AddTransient<IActivationCodeRepository, ActivationCodeRepository>();
             services.AddTransient<IPerUseActivationCodeRecordRepository, PerUseActivationCodeRecordRepository>();
+            services.AddTransient<IActivationCodeTypeV2Repository, ActivationCodeTypeV2Repository>();
+
             return services;
         }
 

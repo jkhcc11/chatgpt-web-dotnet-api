@@ -7,11 +7,12 @@ namespace ChatGpt.Web.Entity.ActivationCodeSys
     /// </summary>
     public class PerUseActivationCodeRecord : BaseEntity<long>
     {
-        public PerUseActivationCodeRecord(long id, 
-            string cardNo, string modelId) : base(id)
+        public PerUseActivationCodeRecord(long id,
+            string cardNo, string modelId, string modelGroupName) : base(id)
         {
             CardNo = cardNo;
             ModelId = modelId;
+            ModelGroupName = modelGroupName;
         }
 
         /// <summary>
@@ -23,5 +24,10 @@ namespace ChatGpt.Web.Entity.ActivationCodeSys
         /// 模型Id
         /// </summary>
         public string ModelId { get; set; }
+
+        /// <summary>
+        /// 模型分组名
+        /// </summary>
+        public string ModelGroupName { get; set; }
     }
 }

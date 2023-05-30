@@ -31,8 +31,15 @@ namespace ChatGpt.Web.IRepository.ActivationCodeSys
         /// <summary>
         ///  根据类型获取卡密
         /// </summary>
-        /// <param name="codeType">卡密类型</param>
+        /// <param name="codeTypeId">卡密类型ID</param>
         /// <returns></returns>
-        Task<List<ActivationCode>> QueryActivationCodeByTypeAsync(ActivationCodeType? codeType);
+        Task<List<ActivationCode>> QueryActivationCodeByTypeAsync(long? codeTypeId);
+
+        /// <summary>
+        /// 删除
+        /// </summary>
+        /// <returns></returns>
+        Task<bool> DeleteAsync(ActivationCode entity);
+
     }
 }
