@@ -37,11 +37,12 @@ namespace ChatGpt.Web.NetCore.Services
         /// <param name="apiKey">key</param>
         /// <param name="request"></param>
         /// <param name="orgId">组织Id</param>
+        /// <param name="proxyHost">反代host</param>
         /// <returns></returns>
         public async Task<KdyResult<SendChatCompletionsResponse>> SendChatCompletionsAsync(string apiKey,
-            SendChatCompletionsRequest request, string? orgId = null)
+            SendChatCompletionsRequest request, string? proxyHost, string? orgId = null)
         {
-            var client = BuildClient();
+            var client = BuildClient(proxyHost);
             if (string.IsNullOrEmpty(orgId) == false)
             {
                 client.DefaultRequestHeaders.Add("OpenAI-Organization", orgId);
@@ -94,12 +95,12 @@ namespace ChatGpt.Web.NetCore.Services
         /// 生成Client
         /// </summary>
         /// <returns></returns>
-        private HttpClient BuildClient()
+        private HttpClient BuildClient(string? proxyHost)
         {
             var baseHost = "https://api.openai.com";
-            if (string.IsNullOrEmpty(_config.OpenAiBaseHost) == false)
+            if (string.IsNullOrEmpty(proxyHost) == false)
             {
-                baseHost = _config.OpenAiBaseHost;
+                baseHost = proxyHost;
             }
 
             var client = _httpClientFactory.CreateClient();

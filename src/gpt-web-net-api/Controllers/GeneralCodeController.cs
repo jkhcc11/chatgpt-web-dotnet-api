@@ -3,7 +3,6 @@ using ChatGpt.Web.BaseInterface;
 using ChatGpt.Web.BaseInterface.Options;
 using ChatGpt.Web.Dto.Inputs;
 using ChatGpt.Web.Entity.ActivationCodeSys;
-using ChatGpt.Web.Entity.Enums;
 using ChatGpt.Web.IRepository.ActivationCodeSys;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -90,7 +89,6 @@ namespace GptWeb.DotNet.Api.Controllers
                     })
                 {
                     ValidDays = 1,
-                   /// ApiKey = ?
                 },
                 new ActivationCodeTypeV2(_idGenerateExtension.GenerateId(),
                     "Gpt3-7天体验卡",new List<SupportModeItem>()
@@ -240,51 +238,6 @@ namespace GptWeb.DotNet.Api.Controllers
             return Content(resultSb.ToString(), "text/plain");
         }
 
-        [HttpGet("fix-data")]
-        public async Task<IActionResult> FixOldDataAsync(string codeKey)
-        {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != codeKey)
-            {
-                return Content("密钥错误");
-            }
-
-            var codeType = await _activationCodeTypeV2Repository.GetAllActivationCodeTypeAsync();
-
-            var activationCode = await _activationCodeRepository
-                .QueryActivationCodeByTypeAsync(null);
-            var resultSb = new StringBuilder();
-            resultSb.AppendLine($"本次修复数量：{activationCode.Count}");
-            foreach (var item in activationCode)
-            {
-                var currentType = codeType.First(a => a.CodeName == "Gpt3-1天体验卡");
-                switch (item.CodeType)
-                {
-                    case ActivationCodeType.Weekly:
-                        {
-                            currentType = codeType.First(a => a.CodeName == "Gpt4-7天体验卡");
-                            break;
-                        }
-                    case ActivationCodeType.PerUse:
-                    case ActivationCodeType.PerUse4:
-                        {
-                            currentType = codeType.First(a => a.CodeName == "每天体验卡");
-                            break;
-                        }
-                    case ActivationCodeType.OneDay4:
-                        {
-                            currentType = codeType.First(a => a.CodeName == "Gpt4-1天体验卡");
-                            break;
-                        }
-                }
-
-                item.CodyTypeId = currentType.Id;
-                await _activationCodeRepository.UpdateAsync(item);
-            }
-
-            return Content(resultSb.ToString(), "text/plain");
-        }
-
         [HttpGet("export-code-type")]
         public async Task<IActionResult> ExportActivationCodeTypeAsync(string codeKey)
         {
@@ -302,7 +255,6 @@ namespace GptWeb.DotNet.Api.Controllers
                 resultSb.AppendLine($"类型名：{item.CodeName}，" +
                                     $"天数：{item.ValidDays}天 体验卡，" +
                                     $"模型：{string.Join(",", item.SupportModelItems.Select(a => a.ModeId))}，" +
-                                    $"ApiKey：{item.ApiKey}，" +
                                     $"Id：{(item.Id)}");
             }
 
@@ -400,7 +352,6 @@ namespace GptWeb.DotNet.Api.Controllers
             , supportModelItems)
             {
                 ValidDays = input.ValidDays,
-                ApiKey = input.ApiKey,
                 IsEveryDayResetCount = input.IsEveryDayResetCount
             };
 
@@ -475,7 +426,6 @@ namespace GptWeb.DotNet.Api.Controllers
             var codeType = await _activationCodeTypeV2Repository.GetEntityByIdAsync(typeId);
             codeType.SupportModelItems = supportModelItems;
             codeType.ValidDays = input.ValidDays;
-            codeType.ApiKey = input.ApiKey;
             codeType.IsEveryDayResetCount = input.IsEveryDayResetCount;
             if (input.IsEveryDayResetCount)
             {

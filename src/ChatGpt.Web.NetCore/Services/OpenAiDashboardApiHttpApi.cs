@@ -37,7 +37,8 @@ namespace ChatGpt.Web.NetCore.Services
         /// <returns></returns>
         public async Task<KdyResult<GetAccountBillingResponse>> GetAccountBillingAsync(GetAccountBillingRequest request)
         {
-            var client = BuildClient();
+            var hostRandom = _config.ApiKeys.RandomList();
+            var client = BuildClient(hostRandom.OpenAiBaseHost);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", request.ApiKey);
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
@@ -123,12 +124,12 @@ namespace ChatGpt.Web.NetCore.Services
         /// 生成Client
         /// </summary>
         /// <returns></returns>
-        private HttpClient BuildClient()
+        private HttpClient BuildClient(string? host)
         {
             var baseHost = "https://api.openai.com";
-            if (string.IsNullOrEmpty(_config.OpenAiBaseHost) == false)
+            if (string.IsNullOrEmpty(host) == false)
             {
-                baseHost = _config.OpenAiBaseHost;
+                baseHost = host;
             }
 
             var client = _httpClientFactory.CreateClient();

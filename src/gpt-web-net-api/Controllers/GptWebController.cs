@@ -188,8 +188,17 @@ namespace GptWeb.DotNet.Api.Controllers
                 codeType.MaxCountItems?.FirstOrDefault(a => a.ModeGroupName == supportModelItem.ModeGroupName);
             #endregion
 
+            #region 根据模型组选择对应的api key
+            var keyItems = _chatGptWebConfig.ApiKeys
+                  .Where(a => a.ModelGroupName == supportModelItem.ModeGroupName)
+                  .ToList();
+            if (keyItems.Any() == false)
+            {
+                keyItems = _chatGptWebConfig.ApiKeys;
+            } 
+            #endregion
 
-            var keyItem = _chatGptWebConfig.ApiKeys.RandomList();
+            var keyItem = keyItems.RandomList();
             var isFirst = string.IsNullOrEmpty(input.Options.ParentMessageId);
             var reqMessages = new List<SendChatCompletionsMessageItem>()
             {
@@ -237,7 +246,7 @@ namespace GptWeb.DotNet.Api.Controllers
                     var errorResult = new BaseGptWebDto<string>()
                     {
                         Message = $"系统提示：当前请求超出最大请求字符{maxCountItem?.MaxRequestToken}tokens，当前：{requestTokenizer.Count} tokens. 解决方法如下：\n" +
-                                  "1、尝试关掉上下文开关\n" +
+                                  "1、尝试关掉上下文开关或减少输入次数\n" +
                                   "2、新建聊天窗口\n" +
                                   "3、前往设置页面切换模型（gpt3所有模型不限制）\n" +
                                   "4、购买卡密，放宽限制\n" +
@@ -254,6 +263,7 @@ namespace GptWeb.DotNet.Api.Controllers
             #region 发送聊天请求和异常处理
             var result = await _openAiHttpApi.SendChatCompletionsAsync(keyItem.ApiKey
                 , request
+                , keyItem.OpenAiBaseHost
                 , keyItem.OrgId);
             if (result.IsSuccess == false)
             {

@@ -8,14 +8,6 @@ namespace ChatGpt.Web.BaseInterface.Options
     public class ChatGptWebConfig
     {
         /// <summary>
-        /// OpenAi BaseHost
-        /// </summary>
-        /// <remarks>
-        /// 反代ApiHost
-        /// </remarks>
-        public string? OpenAiBaseHost { get; set; }
-
-        /// <summary>
         /// ApiKey多个
         /// </summary>
         public List<ApiKeyItem> ApiKeys { get; set; } = new List<ApiKeyItem>();
@@ -37,6 +29,14 @@ namespace ChatGpt.Web.BaseInterface.Options
     public class ApiKeyItem
     {
         /// <summary>
+        /// OpenAi BaseHost
+        /// </summary>
+        /// <remarks>
+        /// 反代ApiHost
+        /// </remarks>
+        public string? OpenAiBaseHost { get; set; }
+
+        /// <summary>
         /// ApiKey
         /// </summary>
         public string ApiKey { get; set; } = "";
@@ -48,5 +48,10 @@ namespace ChatGpt.Web.BaseInterface.Options
         ///  只有一个组织时 可不用配置
         /// </remarks>
         public string? OrgId { get; set; }
+
+        /// <summary>
+        /// 模型分组
+        /// </summary>
+        public string? ModelGroupName { get; set; }
     }
 }

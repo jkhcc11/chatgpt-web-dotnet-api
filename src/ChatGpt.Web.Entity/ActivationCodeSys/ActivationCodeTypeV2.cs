@@ -44,14 +44,6 @@ namespace ChatGpt.Web.Entity.ActivationCodeSys
         public int ValidDays { get; set; }
 
         /// <summary>
-        /// 绑定ApiKey todo：待实现
-        /// </summary>
-        /// <remarks>
-        /// 当前类型使用该ApiKey，没有默认配置第一个
-        /// </remarks>
-        public string? ApiKey { get; set; }
-
-        /// <summary>
         /// 是否每天重置请求次数
         /// </summary>
         /// <remarks>

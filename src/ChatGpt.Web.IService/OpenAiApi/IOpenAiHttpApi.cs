@@ -19,8 +19,9 @@ namespace ChatGpt.Web.IService.OpenAiApi
         /// <param name="apiKey">key</param>
         /// <param name="request"></param>
         /// <param name="orgId">组织Id</param>
+        /// <param name="proxyHost">反代host</param>
         /// <returns></returns>
         Task<KdyResult<SendChatCompletionsResponse>> SendChatCompletionsAsync(string apiKey,
-            SendChatCompletionsRequest request, string? orgId = null);
+            SendChatCompletionsRequest request, string? proxyHost, string? orgId = null);
     }
 }
