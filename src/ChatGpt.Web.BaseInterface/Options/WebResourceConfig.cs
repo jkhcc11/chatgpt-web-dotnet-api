@@ -23,14 +23,9 @@ namespace ChatGpt.Web.BaseInterface.Options
         public string Description { get; set; } = "";
 
         /// <summary>
-        /// 店铺Url
+        /// 首页按钮Html
         /// </summary>
-        public string ShopUrl { get; set; } = "";
-
-        /// <summary>
-        /// 卡密购买Url
-        /// </summary>
-        public string CardShopUrl { get; set; } = "";
+        public string HomeBtnHtml { get; set; } = "";
 
         /// <summary>
         /// 加微信备注
