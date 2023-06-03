@@ -1,4 +1,5 @@
-﻿using ChatGpt.Web.IRepository.ActivationCodeSys;
+﻿using ChatGpt.Web.IRepository;
+using ChatGpt.Web.IRepository.ActivationCodeSys;
 using ChatGpt.Web.IRepository.MessageHistory;
 using ChatGpt.Web.IService.OpenAiApi;
 using ChatGpt.Web.LiteDatabase.Repository;
@@ -18,7 +19,7 @@ namespace GptWeb.DotNet.Api.ServicesExtensiones
             services.AddTransient<IActivationCodeRepository, ActivationCodeRepository>();
             services.AddTransient<IPerUseActivationCodeRecordRepository, PerUseActivationCodeRecordRepository>();
             services.AddTransient<IActivationCodeTypeV2Repository, ActivationCodeTypeV2Repository>();
-
+            services.AddTransient<IGptWebConfigRepository, GptWebConfigRepository>();
             return services;
         }
 

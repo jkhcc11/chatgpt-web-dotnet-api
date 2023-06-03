@@ -7,9 +7,11 @@ using ChatGpt.Web.Dto;
 using ChatGpt.Web.Dto.Inputs;
 using ChatGpt.Web.Dto.Request;
 using ChatGpt.Web.Dto.Response;
+using ChatGpt.Web.Entity;
 using ChatGpt.Web.Entity.ActivationCodeSys;
 using ChatGpt.Web.Entity.Enums;
 using ChatGpt.Web.Entity.MessageHistory;
+using ChatGpt.Web.IRepository;
 using ChatGpt.Web.IRepository.ActivationCodeSys;
 using ChatGpt.Web.IRepository.MessageHistory;
 using ChatGpt.Web.IService.OpenAiApi;
@@ -31,6 +33,7 @@ namespace GptWeb.DotNet.Api.Controllers
         private readonly IActivationCodeRepository _activationCodeRepository;
         private readonly IPerUseActivationCodeRecordRepository _perUseActivationCodeRecordRepository;
         private readonly IActivationCodeTypeV2Repository _activationCodeTypeV2Repository;
+        private readonly IGptWebConfigRepository _gptWebConfigRepository;
 
         private readonly IdGenerateExtension _idGenerateExtension;
         private readonly IMemoryCache _memoryCache;
@@ -38,13 +41,15 @@ namespace GptWeb.DotNet.Api.Controllers
         private readonly ILogger<GptWebController> _logger;
         private readonly WebResourceConfig _webResourceConfig;
 
+
         public GptWebController(IOpenAiHttpApi openAiHttpApi, IGptWebMessageRepository webMessageRepository,
             ILogger<GptWebController> logger, IdGenerateExtension idGenerateExtension,
             IActivationCodeRepository activationCodeRepository, IMemoryCache memoryCache,
             IOptions<ChatGptWebConfig> options,
             IOptions<WebResourceConfig> recourseOptions,
             IPerUseActivationCodeRecordRepository perUseActivationCodeRecordRepository,
-            IActivationCodeTypeV2Repository activationCodeTypeV2Repository)
+            IActivationCodeTypeV2Repository activationCodeTypeV2Repository,
+            IGptWebConfigRepository gptWebConfigRepository)
         {
             _openAiHttpApi = openAiHttpApi;
             _webMessageRepository = webMessageRepository;
@@ -54,6 +59,7 @@ namespace GptWeb.DotNet.Api.Controllers
             _memoryCache = memoryCache;
             _perUseActivationCodeRecordRepository = perUseActivationCodeRecordRepository;
             _activationCodeTypeV2Repository = activationCodeTypeV2Repository;
+            _gptWebConfigRepository = gptWebConfigRepository;
             _chatGptWebConfig = options.Value;
             _webResourceConfig = recourseOptions.Value;
         }
@@ -195,7 +201,7 @@ namespace GptWeb.DotNet.Api.Controllers
             if (keyItems.Any() == false)
             {
                 keyItems = _chatGptWebConfig.ApiKeys;
-            } 
+            }
             #endregion
 
             var keyItem = keyItems.RandomList();
@@ -413,6 +419,18 @@ namespace GptWeb.DotNet.Api.Controllers
         [HttpPost("resource")]
         public async Task<IActionResult> GetResourceAsync()
         {
+            GptWebConfig? currentConfig = null;
+            var allConfig = await _gptWebConfigRepository.GetAllConfigAsync();
+            var refUrl = HttpContext.Request.Headers.Referer + "";
+            if (string.IsNullOrEmpty(refUrl) == false)
+            {
+                //Æ¥Åäµ±Ç°µÄ
+                var host = new Uri(refUrl).Host;
+                currentConfig = allConfig.FirstOrDefault(a => a.SubDomainHost == host);
+            }
+
+            currentConfig ??= allConfig.FirstOrDefault(a => string.IsNullOrEmpty(a.SubDomainHost));
+
             var config = _webResourceConfig;
             var codeType = await _activationCodeTypeV2Repository.GetAllActivationCodeTypeAsync();
             var freeCodeType = codeType.First(a => a.ValidDays == 999);
@@ -420,6 +438,8 @@ namespace GptWeb.DotNet.Api.Controllers
 
             config.FreeCode = cardInfo.First().CardNo;
             config.FreeCode4 = cardInfo.First().CardNo;
+            config.Description = currentConfig?.Description ?? "";
+            config.HomeBtnHtml = currentConfig?.HomeBtnHtml ?? "";
             var result = new BaseGptWebDto<WebResourceConfig>()
             {
                 Data = config,

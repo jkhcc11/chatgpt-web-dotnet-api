@@ -2,7 +2,9 @@
 using ChatGpt.Web.BaseInterface;
 using ChatGpt.Web.BaseInterface.Options;
 using ChatGpt.Web.Dto.Inputs;
+using ChatGpt.Web.Entity;
 using ChatGpt.Web.Entity.ActivationCodeSys;
+using ChatGpt.Web.IRepository;
 using ChatGpt.Web.IRepository.ActivationCodeSys;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -18,6 +20,7 @@ namespace GptWeb.DotNet.Api.Controllers
     {
         private readonly IActivationCodeRepository _activationCodeRepository;
         private readonly IActivationCodeTypeV2Repository _activationCodeTypeV2Repository;
+        private readonly IGptWebConfigRepository _gptWebConfigRepository;
 
         private readonly IConfiguration _configuration;
         private readonly IdGenerateExtension _idGenerateExtension;
@@ -26,12 +29,14 @@ namespace GptWeb.DotNet.Api.Controllers
         public GeneralCodeController(IActivationCodeRepository activationCodeRepository,
             IConfiguration configuration, IdGenerateExtension idGenerateExtension,
             IOptions<WebResourceConfig> recourseOptions,
-            IActivationCodeTypeV2Repository activationCodeTypeV2Repository)
+            IActivationCodeTypeV2Repository activationCodeTypeV2Repository, 
+            IGptWebConfigRepository gptWebConfigRepository)
         {
             _activationCodeRepository = activationCodeRepository;
             _configuration = configuration;
             _idGenerateExtension = idGenerateExtension;
             _activationCodeTypeV2Repository = activationCodeTypeV2Repository;
+            _gptWebConfigRepository = gptWebConfigRepository;
             _webResourceConfig = recourseOptions.Value;
         }
 
@@ -315,7 +320,7 @@ namespace GptWeb.DotNet.Api.Controllers
             var exits = await _activationCodeTypeV2Repository.CheckNameAsync(input.CardTypeName);
             if (exits)
             {
-                return Content("当前名称已存在,请求修改");
+                return Content("当前名称已存在,操作失败");
             }
 
             #region 补全支持模型
@@ -446,5 +451,79 @@ namespace GptWeb.DotNet.Api.Controllers
             var result = await _activationCodeTypeV2Repository.UpdateAsync(codeType);
             return Content($"操作成功：{result},Id:{codeType.Id}");
         }
+
+        [HttpGet("export-web-config")]
+        public async Task<IActionResult> ExportGptWebConfigAsync(string codeKey)
+        {
+            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
+            if (generalKey != codeKey)
+            {
+                return Content("密钥错误");
+            }
+
+            var allConfig = await _gptWebConfigRepository.GetAllConfigAsync();
+            var resultSb = new StringBuilder();
+            foreach (var item in allConfig)
+            {
+                resultSb.AppendLine($"Host：{item.SubDomainHost}，" +
+                                    $"Des：{item.Description}，" +
+                                    $"BtnHtml：{item.HomeBtnHtml}，" +
+                                    $"Id：{(item.Id)}");
+            }
+
+            return Content(resultSb.ToString(), "text/plain");
+        }
+
+        /// <summary>
+        /// 创建配置
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("create-web-config")]
+        public async Task<IActionResult> CreateGptWebConfigAsync(CreateGptWebConfigInput input)
+        {
+            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
+            if (generalKey != input.GeneralCodeKey)
+            {
+                return Content("密钥错误");
+            }
+
+            var allConfig = await _gptWebConfigRepository.GetAllConfigAsync();
+            if (allConfig.Exists(a => a.SubDomainHost == input.SubDomainHost)||
+                (string.IsNullOrEmpty(input.SubDomainHost) &&
+                 allConfig.Exists(a=>string.IsNullOrEmpty(a.SubDomainHost))))
+            {
+                return Content("当前名称已存在,修改失败");
+            }
+
+            //构建配置
+            var dbEntity = new GptWebConfig(_idGenerateExtension.GenerateId())
+            {
+                SubDomainHost = input.SubDomainHost,
+                Description = input.Description,
+                HomeBtnHtml = input.HomeBtnHtml
+            };
+            await _gptWebConfigRepository.CreateAsync(dbEntity);
+            return Content($"新增成功：{dbEntity.SubDomainHost},Id:{dbEntity.Id}");
+        }
+
+        [HttpPost("update-web-config/{configId}")]
+        public async Task<IActionResult> UpdateGptWebConfigAsync(long configId, CreateGptWebConfigInput input)
+        {
+            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
+            if (generalKey != input.GeneralCodeKey)
+            {
+                return Content("密钥错误");
+            }
+
+            var allConfig = await _gptWebConfigRepository.GetAllConfigAsync();
+
+            var entity = allConfig.First(a => a.Id == configId);
+            entity.SubDomainHost = input.SubDomainHost;
+            entity.Description = input.Description;
+            entity.HomeBtnHtml = input.HomeBtnHtml;
+            var result = await _gptWebConfigRepository.UpdateAsync(entity);
+            return Content($"操作成功：{result},Id:{entity.Id}");
+        }
+
     }
 }
