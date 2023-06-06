@@ -2,15 +2,16 @@
 using System.Threading.Tasks;
 using ChatGpt.Web.Entity;
 using ChatGpt.Web.IRepository;
+using MongoDB.Driver;
 
-namespace ChatGpt.Web.LiteDatabase.Repository
+namespace ChatGpt.Web.MongoDB.Repository
 {
     /// <summary>
     /// 站点配置 仓储实现
     /// </summary>
-    public class GptWebConfigRepository : BaseLiteDatabaseRepository<GptWebConfig, long>, IGptWebConfigRepository
+    public class GptWebConfigRepository : BaseMongodbRepository<GptWebConfig, long>, IGptWebConfigRepository
     {
-        public GptWebConfigRepository(LiteDB.LiteDatabase liteDatabase) : base(liteDatabase)
+        public GptWebConfigRepository(GptWebMongodbContext gptWebMongodbContext) : base(gptWebMongodbContext)
         {
         }
 
@@ -20,10 +21,9 @@ namespace ChatGpt.Web.LiteDatabase.Repository
         /// <returns></returns>
         public async Task<List<GptWebConfig>> GetAllConfigAsync()
         {
-            var query = DbCollection.Query();
-            await Task.CompletedTask;
-            return query.ToList();
+            return await DbCollection.AsQueryable().ToListAsync();
         }
+
 
     }
 }

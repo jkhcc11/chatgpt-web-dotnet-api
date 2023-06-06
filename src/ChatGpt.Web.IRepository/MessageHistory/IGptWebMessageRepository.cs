@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using ChatGpt.Web.BaseInterface;
 using ChatGpt.Web.Entity.MessageHistory;
 
 namespace ChatGpt.Web.IRepository.MessageHistory
@@ -7,20 +8,8 @@ namespace ChatGpt.Web.IRepository.MessageHistory
     /// <summary>
     /// 消息 仓储接口
     /// </summary>
-    public interface IGptWebMessageRepository
+    public interface IGptWebMessageRepository : IBaseRepository<GptWebMessage, long>
     {
-        /// <summary>
-        /// 创建
-        /// </summary>
-        /// <returns></returns>
-        Task<bool> CreateAsync(GptWebMessage entity);
-
-        /// <summary>
-        /// 批量创建
-        /// </summary>
-        /// <returns></returns>
-        Task<bool> BatchCreateAsync(List<GptWebMessage> entities);
-
         /// <summary>
         /// 根据会话Id查询消息列表
         /// </summary>

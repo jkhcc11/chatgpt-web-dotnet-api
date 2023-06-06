@@ -2,15 +2,17 @@
 using System.Threading.Tasks;
 using ChatGpt.Web.Entity.ActivationCodeSys;
 using ChatGpt.Web.IRepository.ActivationCodeSys;
+using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
-namespace ChatGpt.Web.LiteDatabase.Repository
+namespace ChatGpt.Web.MongoDB.Repository
 {
     /// <summary>
     /// 卡密信息 仓储实现
     /// </summary>
-    public class ActivationCodeRepository : BaseLiteDatabaseRepository<ActivationCode, long>, IActivationCodeRepository
+    public class ActivationCodeRepository : BaseMongodbRepository<ActivationCode, long>, IActivationCodeRepository
     {
-        public ActivationCodeRepository(LiteDB.LiteDatabase liteDatabase) : base(liteDatabase)
+        public ActivationCodeRepository(GptWebMongodbContext gptWebMongodbContext) : base(gptWebMongodbContext)
         {
         }
 
@@ -20,8 +22,7 @@ namespace ChatGpt.Web.LiteDatabase.Repository
         /// <returns></returns>
         public async Task<ActivationCode?> GetActivationCodeByCardNoAsync(string cardNo)
         {
-            await Task.CompletedTask;
-            return DbCollection.FindOne(a => a.CardNo == cardNo);
+            return await DbCollection.Find(a => a.CardNo == cardNo).FirstOrDefaultAsync();
         }
 
         /// <summary>
@@ -31,14 +32,13 @@ namespace ChatGpt.Web.LiteDatabase.Repository
         /// <returns></returns>
         public async Task<List<ActivationCode>> QueryActivationCodeByTypeAsync(long? codeTypeId)
         {
-            var query = DbCollection.Query();
+            var query = DbCollection.AsQueryable();
             if (codeTypeId.HasValue)
             {
                 query = query.Where(a => a.CodyTypeId == codeTypeId.Value);
             }
 
-            await Task.CompletedTask;
-            return query.ToList();
+            return await query.ToListAsync();
         }
     }
 }

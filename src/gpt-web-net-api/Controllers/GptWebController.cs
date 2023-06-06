@@ -497,7 +497,7 @@ namespace GptWeb.DotNet.Api.Controllers
             };
             messages.Add(assistantMessage);
 
-            await _webMessageRepository.BatchCreateAsync(messages);
+            await _webMessageRepository.CreateAsync(messages);
         }
 
         /// <summary>

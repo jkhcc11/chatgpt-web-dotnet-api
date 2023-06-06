@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ChatGpt.Web.LiteDatabase\ChatGpt.Web.LiteDatabase.csproj" />
+    <ProjectReference Include="..\ChatGpt.Web.MongoDB\ChatGpt.Web.MongoDB.csproj" />
     <ProjectReference Include="..\ChatGpt.Web.NetCore\ChatGpt.Web.NetCore.csproj" />
   </ItemGroup>
 

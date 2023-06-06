@@ -1,28 +1,14 @@
-﻿using ChatGpt.Web.IRepository;
-using ChatGpt.Web.IRepository.ActivationCodeSys;
-using ChatGpt.Web.IRepository.MessageHistory;
-using ChatGpt.Web.IService.OpenAiApi;
-using ChatGpt.Web.LiteDatabase.Repository;
+﻿using ChatGpt.Web.IService.OpenAiApi;
+using ChatGpt.Web.LiteDatabase;
+using ChatGpt.Web.MongoDB;
 using ChatGpt.Web.NetCore.Services;
+using LiteDB;
+using MongoDB.Driver;
 
 namespace GptWeb.DotNet.Api.ServicesExtensiones
 {
     public static class ServicesExtension
     {
-        /// <summary>
-        /// 添加仓储 DI
-        /// </summary>
-        /// <returns></returns>
-        public static IServiceCollection AddRepository(this IServiceCollection services)
-        {
-            services.AddTransient<IGptWebMessageRepository, GptWebMessageRepository>();
-            services.AddTransient<IActivationCodeRepository, ActivationCodeRepository>();
-            services.AddTransient<IPerUseActivationCodeRecordRepository, PerUseActivationCodeRecordRepository>();
-            services.AddTransient<IActivationCodeTypeV2Repository, ActivationCodeTypeV2Repository>();
-            services.AddTransient<IGptWebConfigRepository, GptWebConfigRepository>();
-            return services;
-        }
-
         /// <summary>
         /// 添加Services DI
         /// </summary>
@@ -31,6 +17,48 @@ namespace GptWeb.DotNet.Api.ServicesExtensiones
         {
             services.AddTransient<IOpenAiDashboardApiHttpApi, OpenAiDashboardApiHttpApi>();
             services.AddTransient<IOpenAiHttpApi, OpenAiHttpApi>();
+            return services;
+        }
+
+        /// <summary>
+        /// 添加LiteDB
+        /// </summary>
+        /// <returns></returns>
+        public static IServiceCollection AddLiteDb(this IServiceCollection services,
+            IConfiguration configuration)
+        {
+            var connectionString = configuration.GetValue<string>("ConnectionStrings:LiteDb");
+            var logConnectionString = configuration.GetValue<string>("ConnectionStrings:LiteDbLog");
+            if (string.IsNullOrEmpty(connectionString) ||
+                string.IsNullOrEmpty(logConnectionString))
+            {
+                throw new ArgumentNullException("未配置LiteDb连接信息，请检查ConnectionStrings:LiteDb、ConnectionStrings:LiteDbLog");
+            }
+
+            services.AddTransient(_ => new LiteDatabase(connectionString));
+            services.AddTransient(_ => new LogLiteDatabase(logConnectionString));
+            services.AddLiteDbRepository();
+            return services;
+        }
+
+        /// <summary>
+        /// 添加Mongodb
+        /// </summary>
+        /// <returns></returns>
+        public static IServiceCollection AddMongodb(this IServiceCollection services,
+            IConfiguration configuration)
+        {
+            var connectionString = configuration.GetValue<string>("ConnectionStrings:Mongodb");
+            var databaseName = configuration.GetValue<string>("ConnectionStrings:MongodbDatabaseName");
+            if (string.IsNullOrEmpty(connectionString) ||
+                string.IsNullOrEmpty(databaseName))
+            {
+                throw new ArgumentNullException("未配置Mongodb连接信息，请检查ConnectionStrings:Mongodb、ConnectionStrings:MongodbDatabaseName");
+            }
+
+            services.AddSingleton(_ =>
+                new GptWebMongodbContext(new MongoClient(connectionString), databaseName));
+            services.AddMongodbRepository();
             return services;
         }
     }

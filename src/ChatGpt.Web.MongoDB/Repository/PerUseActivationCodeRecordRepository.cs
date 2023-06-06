@@ -2,15 +2,17 @@
 using System.Threading.Tasks;
 using ChatGpt.Web.Entity.ActivationCodeSys;
 using ChatGpt.Web.IRepository.ActivationCodeSys;
+using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
-namespace ChatGpt.Web.LiteDatabase.Repository
+namespace ChatGpt.Web.MongoDB.Repository
 {
     /// <summary>
     /// 按次卡密记录 仓储实现
     /// </summary>
-    public class PerUseActivationCodeRecordRepository : BaseLiteDatabaseRepository<PerUseActivationCodeRecord, long>, IPerUseActivationCodeRecordRepository
+    public class PerUseActivationCodeRecordRepository : BaseMongodbRepository<PerUseActivationCodeRecord, long>, IPerUseActivationCodeRecordRepository
     {
-        public PerUseActivationCodeRecordRepository(LiteDB.LiteDatabase liteDatabase) : base(liteDatabase)
+        public PerUseActivationCodeRecordRepository(GptWebMongodbContext gptWebMongodbContext) : base(gptWebMongodbContext)
         {
         }
 
@@ -24,12 +26,15 @@ namespace ChatGpt.Web.LiteDatabase.Repository
         public async Task<int> CountTimesByGroupNameAsync(DateTime date, string cardNo
             , string modelGroupName)
         {
-            var query = DbCollection.Query()
-                .Where(a => a.CreatedTime.Date == date &&
+            var startTime = date.Date;
+            var endTime = Convert.ToDateTime($"{date:yyyy-MM-dd 23:59:59}");
+
+            var query = DbCollection.AsQueryable()
+                .Where(a => a.CreatedTime >= startTime &&
+                            a.CreatedTime <= endTime &&
                             a.CardNo == cardNo &&
                             a.ModelGroupName == modelGroupName);
-            await Task.CompletedTask;
-            return query.Count();
+            return await query.CountAsync();
         }
 
         /// <summary>
@@ -41,12 +46,15 @@ namespace ChatGpt.Web.LiteDatabase.Repository
         /// <returns></returns>
         public async Task<int> CountTimesByModelIdAsync(DateTime date, string cardNo, string modelId)
         {
-            var query = DbCollection.Query()
-                .Where(a => a.CreatedTime.Date == date &&
+            var startTime = date.Date;
+            var endTime = Convert.ToDateTime($"{date:yyyy-MM-dd 23:59:59}");
+
+            var query = DbCollection.AsQueryable()
+                .Where(a => a.CreatedTime >= startTime &&
+                            a.CreatedTime <= endTime &&
                             a.CardNo == cardNo &&
                             a.ModelId == modelId);
-            await Task.CompletedTask;
-            return query.Count();
+            return await query.CountAsync();
         }
 
     }

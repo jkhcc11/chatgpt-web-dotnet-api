@@ -6,6 +6,7 @@ namespace ChatGpt.Web.BaseInterface
     /// 基础Entity
     /// </summary>
     public abstract class BaseEntity<TKey>
+    where TKey : struct
     {
         protected BaseEntity()
         {

@@ -10,14 +10,15 @@ namespace ChatGpt.Web.LiteDatabase.Repository
     /// <summary>
     /// 消息 仓储实现
     /// </summary>
-    public class GptWebMessageRepository : IGptWebMessageRepository
+    public class GptWebMessageRepository : BaseLiteDatabaseRepository<GptWebMessage, long>, IGptWebMessageRepository
     {
-        private readonly LogLiteDatabase _liteDatabase;
-        public GptWebMessageRepository(LogLiteDatabase liteDatabase)
+        //todo 这里分文件存的log
+        private readonly LogLiteDatabase _logLiteDatabase;
+        public GptWebMessageRepository(LiteDB.LiteDatabase liteDatabase, LogLiteDatabase logLiteDatabase)
+            : base(liteDatabase)
         {
-            _liteDatabase = liteDatabase;
+            _logLiteDatabase = logLiteDatabase;
         }
-
 
         /// <summary>
         /// 表名
@@ -28,10 +29,10 @@ namespace ChatGpt.Web.LiteDatabase.Repository
         /// 创建
         /// </summary>
         /// <returns></returns>
-        public async Task<bool> CreateAsync(GptWebMessage entity)
+        public override async Task<bool> CreateAsync(GptWebMessage entity)
         {
             entity.CreatedTime = DateTime.Now;
-            var col = _liteDatabase.GetCollection<GptWebMessage>(TableName);
+            var col = _logLiteDatabase.GetCollection<GptWebMessage>(TableName);
             col.Insert(entity);
 
             await Task.CompletedTask;
@@ -42,14 +43,14 @@ namespace ChatGpt.Web.LiteDatabase.Repository
         /// 批量创建
         /// </summary>
         /// <returns></returns>
-        public async Task<bool> BatchCreateAsync(List<GptWebMessage> entities)
+        public override async Task<bool> CreateAsync(List<GptWebMessage> entities)
         {
             entities.ForEach(item =>
             {
                 item.CreatedTime = DateTime.Now;
             });
 
-            var col = _liteDatabase.GetCollection<GptWebMessage>(TableName);
+            var col = _logLiteDatabase.GetCollection<GptWebMessage>(TableName);
             col.Insert(entities);
 
             await Task.CompletedTask;
@@ -63,7 +64,7 @@ namespace ChatGpt.Web.LiteDatabase.Repository
         /// <returns></returns>
         public async Task<List<GptWebMessage>> QueryMsgByConversationIdAsync(long conversationId)
         {
-            var col = _liteDatabase.GetCollection<GptWebMessage>(TableName);
+            var col = _logLiteDatabase.GetCollection<GptWebMessage>(TableName);
             await Task.CompletedTask;
             return col.Find(a => a.ConversationId == conversationId).ToList();
         }
@@ -75,9 +76,10 @@ namespace ChatGpt.Web.LiteDatabase.Repository
         /// <returns></returns>
         public async Task<GptWebMessage?> GetMessageByParentMsgIdAsync(string gptId)
         {
-            var col = _liteDatabase.GetCollection<GptWebMessage>(TableName);
+            var col = _logLiteDatabase.GetCollection<GptWebMessage>(TableName);
             await Task.CompletedTask;
             return col.FindOne(a => a.GptMsgId == gptId);
         }
+
     }
 }
