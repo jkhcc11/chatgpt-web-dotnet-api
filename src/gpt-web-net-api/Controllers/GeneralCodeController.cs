@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using ChatGpt.Web.BaseInterface;
+using ChatGpt.Web.BaseInterface.Extensions;
 using ChatGpt.Web.BaseInterface.Options;
 using ChatGpt.Web.Dto.Inputs;
 using ChatGpt.Web.Entity;
@@ -29,7 +30,7 @@ namespace GptWeb.DotNet.Api.Controllers
         public GeneralCodeController(IActivationCodeRepository activationCodeRepository,
             IConfiguration configuration, IdGenerateExtension idGenerateExtension,
             IOptions<WebResourceConfig> recourseOptions,
-            IActivationCodeTypeV2Repository activationCodeTypeV2Repository, 
+            IActivationCodeTypeV2Repository activationCodeTypeV2Repository,
             IGptWebConfigRepository gptWebConfigRepository)
         {
             _activationCodeRepository = activationCodeRepository;
@@ -40,6 +41,7 @@ namespace GptWeb.DotNet.Api.Controllers
             _webResourceConfig = recourseOptions.Value;
         }
 
+        #region 卡类型
         /// <summary>
         /// 初始化卡类型
         /// </summary>
@@ -58,10 +60,10 @@ namespace GptWeb.DotNet.Api.Controllers
                 new(_idGenerateExtension.GenerateId(),
                     "每天体验卡",new List<SupportModeItem>()
                     {
-                        new("gpt-3.5-turbo","gpt3"),
-                        new("gpt-3.5-turbo-0301","gpt3"),
-                        new("gpt-4","gpt4"),
-                        new("gpt-4-0314","gpt4")
+                        new("gpt-3.5-turbo",ActivationCodeTypeV2.Gpt3GroupName),
+                        new("gpt-3.5-turbo-0301",ActivationCodeTypeV2.Gpt3GroupName),
+                        new("gpt-4",ActivationCodeTypeV2.Gpt4GroupName),
+                        new("gpt-4-0314",ActivationCodeTypeV2.Gpt4GroupName)
                     })
                 {
                     ValidDays = 999,
@@ -69,14 +71,13 @@ namespace GptWeb.DotNet.Api.Controllers
                     IsEveryDayResetCount = true,
                     MaxCountItems = new List<MaxCountItem>()
                     {
-                        new("gpt3",_webResourceConfig.EveryDayFreeTimes)
+                        new(ActivationCodeTypeV2.Gpt3GroupName,_webResourceConfig.EveryDayFreeTimes)
                         {
-                            MaxRequestToken = 2000,
+                            MaxRequestToken = 4000,
                             MaxResponseToken = 1000
                         },
-                        new("gpt4",_webResourceConfig.EveryDayFreeTimes4)
+                        new(ActivationCodeTypeV2.Gpt4GroupName,_webResourceConfig.EveryDayFreeTimes4)
                         {
-                            MaxHistoryCount = 10,
                             MaxRequestToken = 100,
                             MaxResponseToken = 100
                         }
@@ -89,8 +90,8 @@ namespace GptWeb.DotNet.Api.Controllers
                 new ActivationCodeTypeV2(_idGenerateExtension.GenerateId(),
                     "Gpt3-1天体验卡",new List<SupportModeItem>()
                     {
-                        new("gpt-3.5-turbo","gpt3"),
-                        new("gpt-3.5-turbo-0301","gpt3")
+                        new("gpt-3.5-turbo",ActivationCodeTypeV2.Gpt3GroupName),
+                        new("gpt-3.5-turbo-0301",ActivationCodeTypeV2.Gpt3GroupName)
                     })
                 {
                     ValidDays = 1,
@@ -98,8 +99,8 @@ namespace GptWeb.DotNet.Api.Controllers
                 new ActivationCodeTypeV2(_idGenerateExtension.GenerateId(),
                     "Gpt3-7天体验卡",new List<SupportModeItem>()
                     {
-                        new("gpt-3.5-turbo","gpt3"),
-                        new("gpt-3.5-turbo-0301","gpt3")
+                        new("gpt-3.5-turbo",ActivationCodeTypeV2.Gpt3GroupName),
+                        new("gpt-3.5-turbo-0301",ActivationCodeTypeV2.Gpt3GroupName)
                     })
                 {
                     ValidDays = 7,
@@ -108,8 +109,8 @@ namespace GptWeb.DotNet.Api.Controllers
                 new ActivationCodeTypeV2(_idGenerateExtension.GenerateId(),
                     "Gpt3-30天体验卡",new List<SupportModeItem>()
                     {
-                        new("gpt-3.5-turbo","gpt3"),
-                        new("gpt-3.5-turbo-0301","gpt3")
+                        new("gpt-3.5-turbo",ActivationCodeTypeV2.Gpt3GroupName),
+                        new("gpt-3.5-turbo-0301",ActivationCodeTypeV2.Gpt3GroupName)
                     })
                 {
                     ValidDays = 30,
@@ -119,17 +120,17 @@ namespace GptWeb.DotNet.Api.Controllers
                 new ActivationCodeTypeV2(_idGenerateExtension.GenerateId(),
                     "Gpt4-1天体验卡",new List<SupportModeItem>()
                     {
-                        new("gpt-3.5-turbo","gpt3"),
-                        new("gpt-3.5-turbo-0301","gpt3"),
-                        new("gpt-4","gpt4"),
-                        new("gpt-4-0314","gpt4")
+                        new("gpt-3.5-turbo",ActivationCodeTypeV2.Gpt3GroupName),
+                        new("gpt-3.5-turbo-0301",ActivationCodeTypeV2.Gpt3GroupName),
+                        new("gpt-4",ActivationCodeTypeV2.Gpt4GroupName),
+                        new("gpt-4-0314",ActivationCodeTypeV2.Gpt4GroupName)
                     })
                 {
                     ValidDays = 1,
                     IsEveryDayResetCount = true,
                     MaxCountItems = new List<MaxCountItem>()
                     {
-                        new("gpt4",11)
+                        new(ActivationCodeTypeV2.Gpt4GroupName,11)
                         {
                             MaxHistoryCount = 50,
                             MaxRequestToken = 500,
@@ -141,17 +142,17 @@ namespace GptWeb.DotNet.Api.Controllers
                 new ActivationCodeTypeV2(_idGenerateExtension.GenerateId(),
                     "Gpt4-1天无次数限制",new List<SupportModeItem>()
                     {
-                        new("gpt-3.5-turbo","gpt3"),
-                        new("gpt-3.5-turbo-0301","gpt3"),
-                        new("gpt-4","gpt4"),
-                        new("gpt-4-0314","gpt4")
+                        new("gpt-3.5-turbo",ActivationCodeTypeV2.Gpt3GroupName),
+                        new("gpt-3.5-turbo-0301",ActivationCodeTypeV2.Gpt3GroupName),
+                        new("gpt-4",ActivationCodeTypeV2.Gpt4GroupName),
+                        new("gpt-4-0314",ActivationCodeTypeV2.Gpt4GroupName)
                     })
                 {
                     ValidDays = 1,
                     IsEveryDayResetCount = true,
                     MaxCountItems = new List<MaxCountItem>()
                     {
-                        new("gpt4",9999)
+                        new(ActivationCodeTypeV2.Gpt4GroupName,9999)
                         {
                             MaxRequestToken = 1000,
                             MaxResponseToken = 1000
@@ -162,17 +163,17 @@ namespace GptWeb.DotNet.Api.Controllers
                 new ActivationCodeTypeV2(_idGenerateExtension.GenerateId(),
                     "Gpt4-7天体验卡",new List<SupportModeItem>()
                     {
-                        new("gpt-3.5-turbo","gpt3"),
-                        new("gpt-3.5-turbo-0301","gpt3"),
-                        new("gpt-4","gpt4"),
-                        new("gpt-4-0314","gpt4")
+                        new("gpt-3.5-turbo",ActivationCodeTypeV2.Gpt3GroupName),
+                        new("gpt-3.5-turbo-0301",ActivationCodeTypeV2.Gpt3GroupName),
+                        new("gpt-4",ActivationCodeTypeV2.Gpt4GroupName),
+                        new("gpt-4-0314",ActivationCodeTypeV2.Gpt4GroupName)
                     })
                 {
                     ValidDays = 7,
                     IsEveryDayResetCount = true,
                     MaxCountItems = new List<MaxCountItem>()
                     {
-                        new("gpt4",11)  {
+                        new(ActivationCodeTypeV2.Gpt4GroupName,11)  {
                             MaxHistoryCount = 50,
                             MaxRequestToken = 500,
                             MaxResponseToken = 500
@@ -187,60 +188,17 @@ namespace GptWeb.DotNet.Api.Controllers
             return Content($"数量：{dbType.Count}");
         }
 
-        [HttpPost("batch-general")]
-        public async Task<IActionResult> BatchGeneralCodeAsync(BatchGeneralCodeInput input)
+        [HttpDelete("clear-code-type")]
+        public async Task<IActionResult> DeleteAllCodeTypeAsync(string codeKey)
         {
             var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != input.GeneralCodeKey)
+            if (generalKey != codeKey)
             {
                 return Content("密钥错误");
             }
 
-            var codeType = await _activationCodeTypeV2Repository.GetEntityByIdAsync(input.CodeTypeId);
-            var resultSb = new StringBuilder();
-            resultSb.AppendLine($"本次生成数量：{input.Number}" +
-                                $",模型：{string.Join(",", codeType.SupportModelItems.Select(a => a.ModeId))}" +
-                                $",类型：{codeType.ValidDays} 天");
-            var dbActivationCode = new List<ActivationCode>();
-            for (var i = 0; i < input.Number; i++)
-            {
-                var code = Guid.NewGuid().ToString();
-                dbActivationCode.Add(new ActivationCode(_idGenerateExtension.GenerateId(),
-                    code, codeType.Id));
-                resultSb.AppendLine(code);
-            }
-
-            await _activationCodeRepository.CreateAsync(dbActivationCode);
-            return Content(resultSb.ToString(), "text/plain");
-        }
-
-        [HttpPost("export")]
-        public async Task<IActionResult> ExportActivationCodeAsync(ExportActivationCodeInput input)
-        {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != input.GeneralCodeKey)
-            {
-                return Content("密钥错误");
-            }
-
-            var codeType = await _activationCodeTypeV2Repository.GetAllActivationCodeTypeAsync();
-
-            var activationCode = await _activationCodeRepository
-                .QueryActivationCodeByTypeAsync(input.CodeTypeId);
-            var resultSb = new StringBuilder();
-            resultSb.AppendLine($"本次导出数量：{activationCode.Count}");
-            foreach (var item in activationCode)
-            {
-                var currentCodeType = codeType.First(a => a.Id == item.CodyTypeId);
-                resultSb.AppendLine($"卡号：{item.CardNo}，" +
-                                    $"类型：{currentCodeType.ValidDays}天 体验卡，" +
-                                    $"模型：{string.Join(",", currentCodeType.SupportModelItems.Select(a => a.ModeId))}，" +
-                                    $"是否激活：{(item.ActivateTime.HasValue ? "是" : "否")}，" +
-                                    $"创建时间：{item.CreatedTime}，" +
-                                    $"激活时间：{(item.ActivateTime?.ToString())}");
-            }
-
-            return Content(resultSb.ToString(), "text/plain");
+            var result = await _activationCodeTypeV2Repository.DeleteAllAsync();
+            return Content(result + "", "text/plain");
         }
 
         [HttpGet("export-code-type")]
@@ -257,39 +215,12 @@ namespace GptWeb.DotNet.Api.Controllers
             resultSb.AppendLine($"本次导出数量：{codeType.Count}");
             foreach (var item in codeType)
             {
-                resultSb.AppendLine($"类型名：{item.CodeName}，" +
-                                    $"天数：{item.ValidDays}天 体验卡，" +
-                                    $"模型：{string.Join(",", item.SupportModelItems.Select(a => a.ModeId))}，" +
+                resultSb.AppendLine($"类型名：{item.CodeName}\r\n" +
+                                    $"Json：{item.ToJsonStr()}\r\n" +
                                     $"Id：{(item.Id)}");
             }
 
             return Content(resultSb.ToString(), "text/plain");
-        }
-
-        [HttpDelete("delete-code")]
-        public async Task<IActionResult> DeleteActivationCodeAsync(string codeKey, string code)
-        {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != codeKey)
-            {
-                return Content("密钥错误");
-            }
-
-            var result = await _activationCodeRepository.DeleteAsync(new ActivationCode(1, code, 1));
-            return Content(result + "", "text/plain");
-        }
-
-        [HttpDelete("clear-code-type")]
-        public async Task<IActionResult> DeleteAllCodeTypeAsync(string codeKey)
-        {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != codeKey)
-            {
-                return Content("密钥错误");
-            }
-
-            var result = await _activationCodeTypeV2Repository.DeleteAllAsync();
-            return Content(result + "", "text/plain");
         }
 
         /// <summary>
@@ -329,13 +260,13 @@ namespace GptWeb.DotNet.Api.Controllers
             {
                 switch (item)
                 {
-                    case "gpt4_32":
+                    case ActivationCodeTypeV2.Gpt432GroupName:
                         {
                             supportModelItems.Add(new SupportModeItem("gpt-4-32k", item));
                             supportModelItems.Add(new SupportModeItem("gpt-4-32k-0314", item));
                             break;
                         }
-                    case "gpt4":
+                    case ActivationCodeTypeV2.Gpt4GroupName:
                         {
                             supportModelItems.Add(new SupportModeItem("gpt-4", item));
                             supportModelItems.Add(new SupportModeItem("gpt-4-0314", item));
@@ -406,13 +337,13 @@ namespace GptWeb.DotNet.Api.Controllers
             {
                 switch (item)
                 {
-                    case "gpt4_32":
+                    case ActivationCodeTypeV2.Gpt432GroupName:
                         {
                             supportModelItems.Add(new SupportModeItem("gpt-4-32k", item));
                             supportModelItems.Add(new SupportModeItem("gpt-4-32k-0314", item));
                             break;
                         }
-                    case "gpt4":
+                    case ActivationCodeTypeV2.Gpt4GroupName:
                         {
                             supportModelItems.Add(new SupportModeItem("gpt-4", item));
                             supportModelItems.Add(new SupportModeItem("gpt-4-0314", item));
@@ -452,6 +383,82 @@ namespace GptWeb.DotNet.Api.Controllers
             return Content($"操作成功：{result},Id:{codeType.Id}");
         }
 
+        #endregion
+
+        #region 卡密
+
+        [HttpPost("batch-general")]
+        public async Task<IActionResult> BatchGeneralCodeAsync(BatchGeneralCodeInput input)
+        {
+            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
+            if (generalKey != input.GeneralCodeKey)
+            {
+                return Content("密钥错误");
+            }
+
+            var codeType = await _activationCodeTypeV2Repository.GetEntityByIdAsync(input.CodeTypeId);
+            var resultSb = new StringBuilder();
+            resultSb.AppendLine($"本次生成数量：{input.Number}" +
+                                $",模型：{string.Join(",", codeType.SupportModelItems.Select(a => a.ModeId))}" +
+                                $",类型：{codeType.ValidDays} 天");
+            var dbActivationCode = new List<ActivationCode>();
+            for (var i = 0; i < input.Number; i++)
+            {
+                var code = Guid.NewGuid().ToString();
+                dbActivationCode.Add(new ActivationCode(_idGenerateExtension.GenerateId(),
+                    code, codeType.Id));
+                resultSb.AppendLine(code);
+            }
+
+            await _activationCodeRepository.CreateAsync(dbActivationCode);
+            return Content(resultSb.ToString(), "text/plain");
+        }
+
+        [HttpPost("export")]
+        public async Task<IActionResult> ExportActivationCodeAsync(ExportActivationCodeInput input)
+        {
+            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
+            if (generalKey != input.GeneralCodeKey)
+            {
+                return Content("密钥错误");
+            }
+
+            var codeType = await _activationCodeTypeV2Repository.GetAllActivationCodeTypeAsync();
+
+            var activationCode = await _activationCodeRepository
+                .QueryActivationCodeByTypeAsync(input.CodeTypeId);
+            var resultSb = new StringBuilder();
+            resultSb.AppendLine($"本次导出数量：{activationCode.Count}");
+            foreach (var item in activationCode)
+            {
+                var currentCodeType = codeType.First(a => a.Id == item.CodyTypeId);
+                resultSb.AppendLine($"卡号：{item.CardNo}，" +
+                                    $"类型：{currentCodeType.ValidDays}天 体验卡，" +
+                                    $"模型：{string.Join(",", currentCodeType.SupportModelItems.Select(a => a.ModeId))}，" +
+                                    $"是否激活：{(item.ActivateTime.HasValue ? "是" : "否")}，" +
+                                    $"创建时间：{item.CreatedTime}，" +
+                                    $"激活时间：{(item.ActivateTime?.ToString())}");
+            }
+
+            return Content(resultSb.ToString(), "text/plain");
+        }
+
+        [HttpDelete("delete-code")]
+        public async Task<IActionResult> DeleteActivationCodeAsync(string codeKey, string code)
+        {
+            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
+            if (generalKey != codeKey)
+            {
+                return Content("密钥错误");
+            }
+
+            var result = await _activationCodeRepository.DeleteAsync(new ActivationCode(1, code, 1));
+            return Content(result + "", "text/plain");
+        }
+
+        #endregion
+
+        #region 站点配置
         [HttpGet("export-web-config")]
         public async Task<IActionResult> ExportGptWebConfigAsync(string codeKey)
         {
@@ -488,9 +495,9 @@ namespace GptWeb.DotNet.Api.Controllers
             }
 
             var allConfig = await _gptWebConfigRepository.GetAllConfigAsync();
-            if (allConfig.Exists(a => a.SubDomainHost == input.SubDomainHost)||
+            if (allConfig.Exists(a => a.SubDomainHost == input.SubDomainHost) ||
                 (string.IsNullOrEmpty(input.SubDomainHost) &&
-                 allConfig.Exists(a=>string.IsNullOrEmpty(a.SubDomainHost))))
+                 allConfig.Exists(a => string.IsNullOrEmpty(a.SubDomainHost))))
             {
                 return Content("当前名称已存在,修改失败");
             }
@@ -524,6 +531,6 @@ namespace GptWeb.DotNet.Api.Controllers
             var result = await _gptWebConfigRepository.UpdateAsync(entity);
             return Content($"操作成功：{result},Id:{entity.Id}");
         }
-
+        #endregion
     }
 }

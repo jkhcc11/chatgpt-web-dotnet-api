@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using ChatGpt.Web.BaseInterface;
 using ChatGpt.Web.Entity.Enums;
 
@@ -9,6 +10,10 @@ namespace ChatGpt.Web.Entity.ActivationCodeSys
     /// </summary>
     public class ActivationCodeTypeV2 : BaseEntity<long>
     {
+        public const string Gpt3GroupName = "gpt3";
+        public const string Gpt4GroupName = "gpt4";
+        public const string Gpt432GroupName = "gpt4_32";
+
         public const string DefaultModelId = "gpt-3.5-turbo";
 
         protected ActivationCodeTypeV2()
@@ -47,7 +52,8 @@ namespace ChatGpt.Web.Entity.ActivationCodeSys
         /// 是否每天重置请求次数
         /// </summary>
         /// <remarks>
-        ///  每天有请求次数限制
+        ///  1、True每天按次检查 <see cref="MaxCountItems"/>  <br/>
+        ///  2、False 在有效期内检查<see cref="MaxCountItems"/>
         /// </remarks>
         public bool IsEveryDayResetCount { get; set; }
 
@@ -63,6 +69,34 @@ namespace ChatGpt.Web.Entity.ActivationCodeSys
         /// 支持模型列表
         /// </summary>
         public List<SupportModeItem> SupportModelItems { get; set; }
+
+        /// <summary>
+        /// 获取最大请求次数
+        /// </summary>
+        /// <returns></returns>
+        public List<MaxCountItem> GetMaxCountItems()
+        {
+            if (MaxCountItems != null &&
+                MaxCountItems.Any())
+            {
+                return MaxCountItems;
+            }
+
+            //没设置 默认
+            return new List<MaxCountItem>()
+            {
+                new MaxCountItem(Gpt3GroupName, 9999)
+                {
+                    MaxRequestToken = 3000,
+                    MaxResponseToken = 1000
+                },
+                new MaxCountItem(Gpt4GroupName, 66)
+                {
+                    MaxRequestToken = 500,
+                    MaxResponseToken = 500
+                }
+            };
+        }
     }
 
     /// <summary>

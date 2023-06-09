@@ -633,45 +633,12 @@ namespace GptWeb.DotNet.Api.Controllers
                 };
             }
 
-            if (codeType.IsEveryDayResetCount == false ||
-                codeType.MaxCountItems == null ||
-                codeType.MaxCountItems.Any() == false)
+            if (codeType.IsEveryDayResetCount)
             {
-                //非按次计算或未配置
-                return new BaseGptWebDto<object>()
-                {
-                    ResultCode = KdyResultCode.Success
-                };
+                return await CheckTodayCardNoTimesAsync(cardNo, codeType, supportModelItem);
             }
 
-            //当前模型组最大配置
-            var modelMax = codeType.MaxCountItems
-                    .FirstOrDefault(a => a.ModeGroupName == supportModelItem.ModeGroupName);
-            if (modelMax == null)
-            {
-                //未配置
-                return new BaseGptWebDto<object>()
-                {
-                    ResultCode = KdyResultCode.Success
-                };
-            }
-
-            //按次计费
-            var count = await _perUseActivationCodeRecordRepository
-                .CountTimesByGroupNameAsync(DateTime.Today, cardNo, supportModelItem.ModeGroupName);
-            if (count > modelMax.MaxCount)
-            {
-                return new BaseGptWebDto<object>()
-                {
-                    ResultCode = KdyResultCode.Error,
-                    Message = $"模型：{supportModelItem.ModeGroupName}，今天额度已耗尽,请更换卡密或模型。次数：{modelMax.MaxCount}"
-                };
-            }
-
-            return new BaseGptWebDto<object>()
-            {
-                ResultCode = KdyResultCode.Success
-            };
+            return await CheckCardNoTimesAsync(cardNo, codeType, supportModelItem);
         }
 
         /// <summary>
@@ -757,6 +724,106 @@ namespace GptWeb.DotNet.Api.Controllers
             }
 
             return cacheValue;
+        }
+
+        /// <summary>
+        /// 检查卡密当天请求次数
+        /// </summary>
+        /// <param name="cardNo">卡密</param>
+        /// <param name="codeType">卡配置信息</param>
+        /// <param name="supportModelItem">模型分组信息</param>
+        /// <returns></returns>
+        private async Task<BaseGptWebDto<object>> CheckTodayCardNoTimesAsync(string cardNo
+            , ActivationCodeTypeV2 codeType
+            , SupportModeItem supportModelItem)
+        {
+            if (codeType.IsEveryDayResetCount == false)
+            {
+                return new BaseGptWebDto<object>()
+                {
+                    ResultCode = KdyResultCode.Error,
+                    Message = "检查异常,today,请联系管理员"
+                };
+            }
+
+            //当前模型组最大配置
+            var modelMax = codeType.GetMaxCountItems()
+                .FirstOrDefault(a => a.ModeGroupName == supportModelItem.ModeGroupName);
+            if (modelMax == null)
+            {
+                //未配置不限制
+                return new BaseGptWebDto<object>()
+                {
+                    ResultCode = KdyResultCode.Success
+                };
+            }
+
+            //按次计费
+            var count = await _perUseActivationCodeRecordRepository
+                .CountTimesByGroupNameAsync(cardNo, supportModelItem.ModeGroupName, DateTime.Today);
+            if (count > modelMax.MaxCount)
+            {
+                return new BaseGptWebDto<object>()
+                {
+                    ResultCode = KdyResultCode.Error,
+                    Message = $"模型：{supportModelItem.ModeGroupName},今天额度已耗尽。请更换卡密。\r\n卡密今日最大次数：{modelMax.MaxCount}"
+                };
+            }
+
+            return new BaseGptWebDto<object>()
+            {
+                ResultCode = KdyResultCode.Success
+            };
+        }
+
+        /// <summary>
+        /// 检查卡密请求次数
+        /// </summary>
+        /// <param name="cardNo">卡密</param>
+        /// <param name="codeType">卡配置信息</param>
+        /// <param name="supportModelItem">模型分组信息</param>
+        /// <returns></returns>
+        private async Task<BaseGptWebDto<object>> CheckCardNoTimesAsync(string cardNo
+            , ActivationCodeTypeV2 codeType
+            , SupportModeItem supportModelItem)
+        {
+            if (codeType.IsEveryDayResetCount)
+            {
+                return new BaseGptWebDto<object>()
+                {
+                    ResultCode = KdyResultCode.Error,
+                    Message = "检查异常,cardNo times,请联系管理员"
+                };
+            }
+
+            //当前模型组最大配置
+            var modelMax = codeType.GetMaxCountItems()
+                .FirstOrDefault(a => a.ModeGroupName == supportModelItem.ModeGroupName);
+            if (modelMax == null)
+            {
+                //未配置不限制
+                return new BaseGptWebDto<object>()
+                {
+                    ResultCode = KdyResultCode.Success
+                };
+            }
+
+            //按次计费
+            var count = await _perUseActivationCodeRecordRepository
+                .CountTimesByGroupNameAsync(cardNo, supportModelItem.ModeGroupName, null);
+            if (count > modelMax.MaxCount)
+            {
+                return new BaseGptWebDto<object>()
+                {
+                    ResultCode = KdyResultCode.Error,
+                    Message = $"模型：{supportModelItem.ModeGroupName},额度已耗尽。请更换卡密。\r\n卡密最大次数：{modelMax.MaxCount}"
+                };
+            }
+
+            return new BaseGptWebDto<object>()
+            {
+                ResultCode = KdyResultCode.Success
+            };
         }
         #endregion
 
