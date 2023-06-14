@@ -11,7 +11,14 @@ namespace ChatGpt.Web.Entity.ActivationCodeSys
     public class ActivationCodeTypeV2 : BaseEntity<long>
     {
         public const string Gpt3GroupName = "gpt3";
+        /// <summary>
+        /// Gpt3 16k
+        /// </summary>
+        public const string Gpt316GroupName = "gpt3_16";
         public const string Gpt4GroupName = "gpt4";
+        /// <summary>
+        /// Gpt4 32k
+        /// </summary>
         public const string Gpt432GroupName = "gpt4_32";
 
         public const string DefaultModelId = "gpt-3.5-turbo";

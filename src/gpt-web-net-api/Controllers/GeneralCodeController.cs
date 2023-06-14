@@ -5,6 +5,7 @@ using ChatGpt.Web.BaseInterface.Options;
 using ChatGpt.Web.Dto.Inputs;
 using ChatGpt.Web.Entity;
 using ChatGpt.Web.Entity.ActivationCodeSys;
+using ChatGpt.Web.Entity.Enums;
 using ChatGpt.Web.IRepository;
 using ChatGpt.Web.IRepository.ActivationCodeSys;
 using Microsoft.AspNetCore.Mvc;
@@ -42,152 +43,6 @@ namespace GptWeb.DotNet.Api.Controllers
         }
 
         #region 卡类型
-        /// <summary>
-        /// 初始化卡类型
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet("init-type")]
-        public async Task<IActionResult> InitCardType(string codeKey)
-        {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != codeKey)
-            {
-                return Content("密钥错误");
-            }
-
-            var freeCodeType = new List<ActivationCodeTypeV2>()
-            {
-                new(_idGenerateExtension.GenerateId(),
-                    "每天体验卡",new List<SupportModeItem>()
-                    {
-                        new("gpt-3.5-turbo",ActivationCodeTypeV2.Gpt3GroupName),
-                        new("gpt-3.5-turbo-0301",ActivationCodeTypeV2.Gpt3GroupName),
-                        new("gpt-4",ActivationCodeTypeV2.Gpt4GroupName),
-                        new("gpt-4-0314",ActivationCodeTypeV2.Gpt4GroupName)
-                    })
-                {
-                    ValidDays = 999,
-                    //ApiKey = ?,
-                    IsEveryDayResetCount = true,
-                    MaxCountItems = new List<MaxCountItem>()
-                    {
-                        new(ActivationCodeTypeV2.Gpt3GroupName,_webResourceConfig.EveryDayFreeTimes)
-                        {
-                            MaxRequestToken = 4000,
-                            MaxResponseToken = 1000
-                        },
-                        new(ActivationCodeTypeV2.Gpt4GroupName,_webResourceConfig.EveryDayFreeTimes4)
-                        {
-                            MaxRequestToken = 100,
-                            MaxResponseToken = 100
-                        }
-                    }
-                }
-            };
-
-            var dbType = new List<ActivationCodeTypeV2>()
-            {
-                new ActivationCodeTypeV2(_idGenerateExtension.GenerateId(),
-                    "Gpt3-1天体验卡",new List<SupportModeItem>()
-                    {
-                        new("gpt-3.5-turbo",ActivationCodeTypeV2.Gpt3GroupName),
-                        new("gpt-3.5-turbo-0301",ActivationCodeTypeV2.Gpt3GroupName)
-                    })
-                {
-                    ValidDays = 1,
-                },
-                new ActivationCodeTypeV2(_idGenerateExtension.GenerateId(),
-                    "Gpt3-7天体验卡",new List<SupportModeItem>()
-                    {
-                        new("gpt-3.5-turbo",ActivationCodeTypeV2.Gpt3GroupName),
-                        new("gpt-3.5-turbo-0301",ActivationCodeTypeV2.Gpt3GroupName)
-                    })
-                {
-                    ValidDays = 7,
-                   // ApiKey = ?
-                },
-                new ActivationCodeTypeV2(_idGenerateExtension.GenerateId(),
-                    "Gpt3-30天体验卡",new List<SupportModeItem>()
-                    {
-                        new("gpt-3.5-turbo",ActivationCodeTypeV2.Gpt3GroupName),
-                        new("gpt-3.5-turbo-0301",ActivationCodeTypeV2.Gpt3GroupName)
-                    })
-                {
-                    ValidDays = 30,
-                    //ApiKey = ?
-                },
-
-                new ActivationCodeTypeV2(_idGenerateExtension.GenerateId(),
-                    "Gpt4-1天体验卡",new List<SupportModeItem>()
-                    {
-                        new("gpt-3.5-turbo",ActivationCodeTypeV2.Gpt3GroupName),
-                        new("gpt-3.5-turbo-0301",ActivationCodeTypeV2.Gpt3GroupName),
-                        new("gpt-4",ActivationCodeTypeV2.Gpt4GroupName),
-                        new("gpt-4-0314",ActivationCodeTypeV2.Gpt4GroupName)
-                    })
-                {
-                    ValidDays = 1,
-                    IsEveryDayResetCount = true,
-                    MaxCountItems = new List<MaxCountItem>()
-                    {
-                        new(ActivationCodeTypeV2.Gpt4GroupName,11)
-                        {
-                            MaxHistoryCount = 50,
-                            MaxRequestToken = 500,
-                            MaxResponseToken = 500
-                        }
-                    },
-                   // ApiKey = ?
-                },
-                new ActivationCodeTypeV2(_idGenerateExtension.GenerateId(),
-                    "Gpt4-1天无次数限制",new List<SupportModeItem>()
-                    {
-                        new("gpt-3.5-turbo",ActivationCodeTypeV2.Gpt3GroupName),
-                        new("gpt-3.5-turbo-0301",ActivationCodeTypeV2.Gpt3GroupName),
-                        new("gpt-4",ActivationCodeTypeV2.Gpt4GroupName),
-                        new("gpt-4-0314",ActivationCodeTypeV2.Gpt4GroupName)
-                    })
-                {
-                    ValidDays = 1,
-                    IsEveryDayResetCount = true,
-                    MaxCountItems = new List<MaxCountItem>()
-                    {
-                        new(ActivationCodeTypeV2.Gpt4GroupName,9999)
-                        {
-                            MaxRequestToken = 1000,
-                            MaxResponseToken = 1000
-                        }
-                    },
-                    // ApiKey = ?
-                },
-                new ActivationCodeTypeV2(_idGenerateExtension.GenerateId(),
-                    "Gpt4-7天体验卡",new List<SupportModeItem>()
-                    {
-                        new("gpt-3.5-turbo",ActivationCodeTypeV2.Gpt3GroupName),
-                        new("gpt-3.5-turbo-0301",ActivationCodeTypeV2.Gpt3GroupName),
-                        new("gpt-4",ActivationCodeTypeV2.Gpt4GroupName),
-                        new("gpt-4-0314",ActivationCodeTypeV2.Gpt4GroupName)
-                    })
-                {
-                    ValidDays = 7,
-                    IsEveryDayResetCount = true,
-                    MaxCountItems = new List<MaxCountItem>()
-                    {
-                        new(ActivationCodeTypeV2.Gpt4GroupName,11)  {
-                            MaxHistoryCount = 50,
-                            MaxRequestToken = 500,
-                            MaxResponseToken = 500
-                        }
-                    },
-                   // ApiKey = ?
-                }
-            };
-
-            dbType.AddRange(freeCodeType);
-            await _activationCodeTypeV2Repository.CreateAsync(dbType);
-            return Content($"数量：{dbType.Count}");
-        }
-
         [HttpDelete("clear-code-type")]
         public async Task<IActionResult> DeleteAllCodeTypeAsync(string codeKey)
         {
@@ -241,11 +96,9 @@ namespace GptWeb.DotNet.Api.Controllers
                 return Content("无效支持模型");
             }
 
-            if (input.IsEveryDayResetCount &&
-                (input.LimitItems == null ||
-                 input.LimitItems.Any() == false))
+            if (input.LimitItems.Any() == false)
             {
-                return Content("每天限制未配置限制");
+                return Content("限制未配置限制");
             }
 
             var exits = await _activationCodeTypeV2Repository.CheckNameAsync(input.CardTypeName);
@@ -258,27 +111,7 @@ namespace GptWeb.DotNet.Api.Controllers
             var supportModelItems = new List<SupportModeItem>();
             foreach (var item in input.SupportModelGroupNameItems)
             {
-                switch (item)
-                {
-                    case ActivationCodeTypeV2.Gpt432GroupName:
-                        {
-                            supportModelItems.Add(new SupportModeItem("gpt-4-32k", item));
-                            supportModelItems.Add(new SupportModeItem("gpt-4-32k-0314", item));
-                            break;
-                        }
-                    case ActivationCodeTypeV2.Gpt4GroupName:
-                        {
-                            supportModelItems.Add(new SupportModeItem("gpt-4", item));
-                            supportModelItems.Add(new SupportModeItem("gpt-4-0314", item));
-                            break;
-                        }
-                    default:
-                        {
-                            supportModelItems.Add(new SupportModeItem("gpt-3.5-turbo", item));
-                            supportModelItems.Add(new SupportModeItem("gpt-3.5-turbo-0301", item));
-                            break;
-                        }
-                }
+                supportModelItems.AddRange(item.GetSupportModeItemsByGroupName());
             }
             #endregion
 
@@ -324,38 +157,16 @@ namespace GptWeb.DotNet.Api.Controllers
                 return Content("无效支持模型");
             }
 
-            if (input.IsEveryDayResetCount &&
-                (input.LimitItems == null ||
-                 input.LimitItems.Any() == false))
+            if (input.LimitItems.Any() == false)
             {
-                return Content("每天限制未配置限制");
+                return Content("限制未配置限制");
             }
 
             #region 补全支持模型
             var supportModelItems = new List<SupportModeItem>();
             foreach (var item in input.SupportModelGroupNameItems)
             {
-                switch (item)
-                {
-                    case ActivationCodeTypeV2.Gpt432GroupName:
-                        {
-                            supportModelItems.Add(new SupportModeItem("gpt-4-32k", item));
-                            supportModelItems.Add(new SupportModeItem("gpt-4-32k-0314", item));
-                            break;
-                        }
-                    case ActivationCodeTypeV2.Gpt4GroupName:
-                        {
-                            supportModelItems.Add(new SupportModeItem("gpt-4", item));
-                            supportModelItems.Add(new SupportModeItem("gpt-4-0314", item));
-                            break;
-                        }
-                    default:
-                        {
-                            supportModelItems.Add(new SupportModeItem("gpt-3.5-turbo", item));
-                            supportModelItems.Add(new SupportModeItem("gpt-3.5-turbo-0301", item));
-                            break;
-                        }
-                }
+                supportModelItems.AddRange(item.GetSupportModeItemsByGroupName());
             }
             #endregion
 
@@ -363,21 +174,14 @@ namespace GptWeb.DotNet.Api.Controllers
             codeType.SupportModelItems = supportModelItems;
             codeType.ValidDays = input.ValidDays;
             codeType.IsEveryDayResetCount = input.IsEveryDayResetCount;
-            if (input.IsEveryDayResetCount)
-            {
-                codeType.MaxCountItems = input.LimitItems
-                    .Select(a => new MaxCountItem(a.SupportModelGroupName, a.EveryDayTimes)
-                    {
-                        MaxHistoryCount = a.MaxHistoryCount,
-                        MaxRequestToken = a.MaxRequestTokens,
-                        MaxResponseToken = a.MaxResponseTokens ?? 500
-                    })
-                    .ToList();
-            }
-            else
-            {
-                codeType.MaxCountItems = null;
-            }
+            codeType.MaxCountItems = input.LimitItems
+                     .Select(a => new MaxCountItem(a.SupportModelGroupName, a.EveryDayTimes)
+                     {
+                         MaxHistoryCount = a.MaxHistoryCount,
+                         MaxRequestToken = a.MaxRequestTokens,
+                         MaxResponseToken = a.MaxResponseTokens ?? 500
+                     })
+                     .ToList();
 
             var result = await _activationCodeTypeV2Repository.UpdateAsync(codeType);
             return Content($"操作成功：{result},Id:{codeType.Id}");

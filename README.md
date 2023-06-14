@@ -23,6 +23,7 @@
 - [x] 支持根据模型请求不同的api key，比如gpt3用key1,gpt4用key2
 
 # 待处理
+- [ ] 新增`Mongodb`存储上下文
 - [ ] 使用`Actions`发布docker 镜像
 - [ ] 调整卡密检测逻辑
 - [ ] 后台管理

@@ -68,12 +68,12 @@ namespace ChatGpt.Web.BaseInterface.Options
         /// <summary>
         /// 显示文案
         /// </summary>
-        public string Label { get; set; } = "gpt-3.5-turbo";
+        public string Label { get; set; } = "";
 
         /// <summary>
         /// 值
         /// </summary>
-        public string Value { get; set; } = "gpt-3.5-turbo";
+        public string Value { get; set; } = "";
 
         /// <summary>
         /// 是否禁用

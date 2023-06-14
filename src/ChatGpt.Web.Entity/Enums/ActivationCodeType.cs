@@ -1,4 +1,7 @@
-﻿namespace ChatGpt.Web.Entity.Enums
+﻿using System.Collections.Generic;
+using ChatGpt.Web.Entity.ActivationCodeSys;
+
+namespace ChatGpt.Web.Entity.Enums
 {
     /// <summary>
     /// 卡密类型
@@ -99,6 +102,45 @@
                         return codeType.GetHashCode();
                     }
             }
+        }
+
+        /// <summary>
+        /// 模型分组转模型列表
+        /// </summary>
+        /// <returns></returns>
+        public static List<SupportModeItem> GetSupportModeItemsByGroupName(this string groupName)
+        {
+            //todo:这里后面groupName和modelId 可配置
+            var supportModelItems = new List<SupportModeItem>();
+            switch (groupName)
+            {
+                case ActivationCodeTypeV2.Gpt432GroupName:
+                    {
+                        supportModelItems.Add(new SupportModeItem("gpt-4-32k", groupName));
+                        supportModelItems.Add(new SupportModeItem("gpt-4-32k-0613", groupName));
+                        break;
+                    }
+                case ActivationCodeTypeV2.Gpt4GroupName:
+                    {
+                        supportModelItems.Add(new SupportModeItem("gpt-4", groupName));
+                        supportModelItems.Add(new SupportModeItem("gpt-4-0613", groupName));
+                        break;
+                    }
+                case ActivationCodeTypeV2.Gpt316GroupName:
+                    {
+                        supportModelItems.Add(new SupportModeItem("gpt-3.5-turbo-16k", groupName));
+                        supportModelItems.Add(new SupportModeItem("gpt-3.5-turbo-16k-0613", groupName));
+                        break;
+                    }
+                default:
+                    {
+                        supportModelItems.Add(new SupportModeItem("gpt-3.5-turbo", groupName));
+                        supportModelItems.Add(new SupportModeItem("gpt-3.5-turbo-0613", groupName));
+                        break;
+                    }
+            }
+
+            return supportModelItems;
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using ChatGpt.Web.Entity.ActivationCodeSys;
 using Newtonsoft.Json;
 
 namespace ChatGpt.Web.Dto.Request
@@ -23,7 +24,7 @@ namespace ChatGpt.Web.Dto.Request
         /// 要使用的模型的 ID
         /// </summary>
         [JsonProperty("model")]
-        public string Model { get; set; } = "gpt-3.5-turbo";
+        public string Model { get; set; } = ActivationCodeTypeV2.DefaultModelId;
 
         /// <summary>
         /// 0 和 2 之间。

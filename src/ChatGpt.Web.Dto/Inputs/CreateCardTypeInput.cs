@@ -14,12 +14,13 @@ namespace ChatGpt.Web.Dto.Inputs
 
         public CreateCardTypeInput(string cardTypeName,
             List<string> supportModelGroupNameItems,
-            int validDays, string generalCodeKey)
+            int validDays, string generalCodeKey, List<LimitItem> limitItems)
         {
             CardTypeName = cardTypeName;
             SupportModelGroupNameItems = supportModelGroupNameItems;
             ValidDays = validDays;
             GeneralCodeKey = generalCodeKey;
+            LimitItems = limitItems;
         }
 
         /// <summary>
@@ -48,7 +49,7 @@ namespace ChatGpt.Web.Dto.Inputs
         /// <summary>
         /// 限制Items
         /// </summary>
-        public List<LimitItem>? LimitItems { get; set; }
+        public List<LimitItem> LimitItems { get; set; }
     }
 
     /// <summary>

@@ -1,4 +1,6 @@
-﻿namespace ChatGpt.Web.Dto.Inputs
+﻿using ChatGpt.Web.Entity.ActivationCodeSys;
+
+namespace ChatGpt.Web.Dto.Inputs
 {
     /// <summary>
     /// 流式返回聊天内容
@@ -24,7 +26,7 @@
         /// <summary>
         /// Api模型
         /// </summary>
-        public string ApiModel { get; set; } = "gpt-3.5-turbo";
+        public string ApiModel { get; set; } = ActivationCodeTypeV2.DefaultModelId;
 
         /// <summary>
         /// 0 和 2 之间。
