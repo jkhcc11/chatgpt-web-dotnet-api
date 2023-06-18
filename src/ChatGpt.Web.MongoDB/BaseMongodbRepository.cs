@@ -27,7 +27,7 @@ namespace ChatGpt.Web.MongoDB
         /// 根据Id获取实体
         /// </summary>
         /// <returns></returns>
-        public async Task<TEntity?> FirstOrDefaultAsync(TKey keyId)
+        public virtual async Task<TEntity?> FirstOrDefaultAsync(TKey keyId)
         {
             return await DbCollection.Find(a => Equals(a.Id, keyId)).FirstOrDefaultAsync();
         }
@@ -36,12 +36,12 @@ namespace ChatGpt.Web.MongoDB
         /// 根据Id获取实体
         /// </summary>
         /// <returns></returns>
-        public async Task<TEntity> GetEntityByIdAsync(TKey keyId)
+        public virtual async Task<TEntity> GetEntityByIdAsync(TKey keyId)
         {
             return await DbCollection.Find(a => Equals(a.Id, keyId)).FirstAsync();
         }
 
-        public async Task<bool> CreateAsync(TEntity entity)
+        public virtual async Task<bool> CreateAsync(TEntity entity)
         {
             entity.CreatedTime = DateTime.Now;
             await DbCollection.InsertOneAsync(entity);
@@ -52,7 +52,7 @@ namespace ChatGpt.Web.MongoDB
         /// 创建
         /// </summary>
         /// <returns></returns>
-        public async Task<bool> CreateAsync(List<TEntity> entities)
+        public virtual async Task<bool> CreateAsync(List<TEntity> entities)
         {
             entities.ForEach(item =>
             {
@@ -67,7 +67,7 @@ namespace ChatGpt.Web.MongoDB
         /// 更新
         /// </summary>
         /// <returns></returns>
-        public async Task<bool> UpdateAsync(TEntity entity)
+        public virtual async Task<bool> UpdateAsync(TEntity entity)
         {
             entity.ModifyTime = DateTime.Now;
             await DbCollection.ReplaceOneAsync(a => Equals(a.Id, entity.Id), entity);
@@ -78,10 +78,19 @@ namespace ChatGpt.Web.MongoDB
         /// 删除
         /// </summary>
         /// <returns></returns>
-        public async Task<bool> DeleteAsync(TEntity entity)
+        public virtual async Task<bool> DeleteAsync(TEntity entity)
         {
             await DbCollection.DeleteOneAsync(a => Equals(a.Id, entity.Id));
             return true;
+        }
+
+        /// <summary>
+        /// 获取所有
+        /// </summary>
+        /// <returns></returns>
+        public virtual async Task<IReadOnlyList<TEntity>> GetAllListAsync()
+        {
+            return await DbCollection.AsQueryable().ToListAsync();
         }
     }
 }

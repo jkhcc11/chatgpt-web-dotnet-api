@@ -39,5 +39,11 @@ namespace ChatGpt.Web.BaseInterface
         /// </summary>
         /// <returns></returns>
         Task<bool> DeleteAsync(TEntity entity);
+
+        /// <summary>
+        /// 获取所有
+        /// </summary>
+        /// <returns></returns>
+        Task<IReadOnlyList<TEntity>> GetAllListAsync();
     }
 }

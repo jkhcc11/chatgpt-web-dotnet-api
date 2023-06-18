@@ -81,5 +81,15 @@ namespace ChatGpt.Web.LiteDatabase.Repository
             return col.FindOne(a => a.GptMsgId == gptId);
         }
 
+        /// <summary>
+        /// 获取所有
+        /// </summary>
+        /// <returns></returns>
+        public override async Task<IReadOnlyList<GptWebMessage>> GetAllListAsync()
+        {
+            var col = _logLiteDatabase.GetCollection<GptWebMessage>(TableName);
+            await Task.CompletedTask;
+            return col.FindAll().ToList();
+        }
     }
 }

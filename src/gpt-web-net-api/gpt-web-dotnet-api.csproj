@@ -19,6 +19,12 @@
     <ProjectReference Include="..\ChatGpt.Web.NetCore\ChatGpt.Web.NetCore.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="gtp-web-netcore-log.db">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
   <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
 
 </Project>

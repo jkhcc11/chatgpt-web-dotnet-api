@@ -91,5 +91,15 @@ namespace ChatGpt.Web.LiteDatabase
             //DbCollection.DeleteMany(a => Equals(a.Id, entity.Id));
             return true;
         }
+
+        /// <summary>
+        /// 获取所有
+        /// </summary>
+        /// <returns></returns>
+        public virtual async Task<IReadOnlyList<TEntity>> GetAllListAsync()
+        {
+            await Task.CompletedTask;
+            return DbCollection.FindAll().ToList();
+        }
     }
 }
