@@ -1,18 +1,18 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using ChatGpt.Web.Entity.ActivationCodeSys;
 using ChatGpt.Web.IRepository.ActivationCodeSys;
+using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
-namespace ChatGpt.Web.LiteDatabase.Repository
+namespace ChatGpt.Web.MongoDB.Repository
 {
     /// <summary>
     /// 卡密类型 仓储实现
     /// </summary>
-    public class ActivationCodeTypeV2Repository : BaseLiteDatabaseRepository<ActivationCodeTypeV2, long>, IActivationCodeTypeV2Repository
+    public class ActivationCodeTypeV2Repository : BaseMongodbRepository<ActivationCodeTypeV2, long>, IActivationCodeTypeV2Repository
     {
-
-        public ActivationCodeTypeV2Repository(LiteDB.LiteDatabase liteDatabase) : base(liteDatabase)
+        public ActivationCodeTypeV2Repository(GptWebMongodbContext gptWebMongodbContext) : base(gptWebMongodbContext)
         {
         }
 
@@ -22,8 +22,7 @@ namespace ChatGpt.Web.LiteDatabase.Repository
         /// <returns></returns>
         public async Task<List<ActivationCodeTypeV2>> GetAllActivationCodeTypeAsync()
         {
-            await Task.CompletedTask;
-            return DbCollection.FindAll().ToList();
+            return await DbCollection.AsQueryable().ToListAsync();
         }
 
         /// <summary>
@@ -32,8 +31,8 @@ namespace ChatGpt.Web.LiteDatabase.Repository
         /// <returns></returns>
         public async Task<bool> DeleteAllAsync()
         {
-            await Task.CompletedTask;
-            return DbCollection.DeleteAll() > 0;
+            await DbCollection.DeleteManyAsync(a => a.Id > 0);
+            return true;
         }
 
         /// <summary>
@@ -42,8 +41,7 @@ namespace ChatGpt.Web.LiteDatabase.Repository
         /// <returns></returns>
         public async Task<bool> CheckNameAsync(string name)
         {
-            await Task.CompletedTask;
-            return DbCollection.FindOne(a => a.CodeName == name) != null;
+            return await DbCollection.AsQueryable().AnyAsync(a => a.CodeName == name);
         }
 
     }

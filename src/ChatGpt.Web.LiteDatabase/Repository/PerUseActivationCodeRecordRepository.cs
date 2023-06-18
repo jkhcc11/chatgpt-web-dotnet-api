@@ -8,31 +8,10 @@ namespace ChatGpt.Web.LiteDatabase.Repository
     /// <summary>
     /// 按次卡密记录 仓储实现
     /// </summary>
-    public class PerUseActivationCodeRecordRepository : IPerUseActivationCodeRecordRepository
+    public class PerUseActivationCodeRecordRepository : BaseLiteDatabaseRepository<PerUseActivationCodeRecord, long>, IPerUseActivationCodeRecordRepository
     {
-        private readonly LiteDB.LiteDatabase _liteDatabase;
-
-        /// <summary>
-        /// 表名
-        /// </summary>
-        private static readonly string TableName = $"GtpWebNetCore_{nameof(PerUseActivationCodeRecord)}";
-
-        public PerUseActivationCodeRecordRepository(LiteDB.LiteDatabase liteDatabase)
+        public PerUseActivationCodeRecordRepository(LiteDB.LiteDatabase liteDatabase) : base(liteDatabase)
         {
-            _liteDatabase = liteDatabase;
-        }
-
-        /// <summary>
-        /// 创建记录
-        /// </summary>
-        /// <returns></returns>
-        public async Task<bool> CreateAsync(PerUseActivationCodeRecord entity)
-        {
-            entity.CreatedTime = DateTime.Now;
-            var col = _liteDatabase.GetCollection<PerUseActivationCodeRecord>(TableName);
-            col.Insert(entity);
-            await Task.CompletedTask;
-            return true;
         }
 
         /// <summary>
@@ -45,17 +24,31 @@ namespace ChatGpt.Web.LiteDatabase.Repository
         public async Task<int> CountTimesByGroupNameAsync(string cardNo
             , string modelGroupName, DateTime? date)
         {
-            var col = _liteDatabase.GetCollection<PerUseActivationCodeRecord>(TableName);
-            var query = col.Query()
-                .Where(a => a.CardNo == cardNo &&
+            var query = DbCollection.Query()
+                .Where(a => a.CreatedTime.Date == date &&
+                            a.CardNo == cardNo &&
                             a.ModelGroupName == modelGroupName);
             if (date.HasValue)
             {
                 query = query.Where(a => a.CreatedTime.Date == date);
             }
 
+        /// <summary>
+        /// 根据日期模型Id统计次数
+        /// </summary>
+        /// <param name="date">日期</param>
+        /// <param name="cardNo">卡号</param>
+        /// <param name="modelId">模型ID</param>
+        /// <returns></returns>
+        public async Task<int> CountTimesByModelIdAsync(DateTime date, string cardNo, string modelId)
+        {
+            var query = DbCollection.Query()
+                .Where(a => a.CreatedTime.Date == date &&
+                            a.CardNo == cardNo &&
+                            a.ModelId == modelId);
             await Task.CompletedTask;
             return query.Count();
         }
+
     }
 }

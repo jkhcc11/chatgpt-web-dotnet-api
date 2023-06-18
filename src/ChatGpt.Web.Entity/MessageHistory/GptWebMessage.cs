@@ -72,5 +72,13 @@ namespace ChatGpt.Web.Entity.MessageHistory
         /// 卡密
         /// </summary>
         public string ActivationCode { get; set; }
+
+        /// <summary>
+        /// 响应时长(毫秒)
+        /// </summary>
+        /// <remarks>
+        /// 总响应时长(回复内容才有)
+        /// </remarks>
+        public long ResponseDuration { get; set; }
     }
 }

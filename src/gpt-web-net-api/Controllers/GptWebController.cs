@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using AI.Dev.OpenAI.GPT;
 using ChatGpt.Web.BaseInterface;
@@ -194,6 +195,8 @@ namespace GptWeb.DotNet.Api.Controllers
                 codeType.MaxCountItems?.FirstOrDefault(a => a.ModeGroupName == supportModelItem.ModeGroupName);
             #endregion
 
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
             #region 根据模型组选择对应的api key
             var keyItems = _chatGptWebConfig.ApiKeys
                   .Where(a => a.ModelGroupName == supportModelItem.ModeGroupName)
@@ -232,9 +235,12 @@ namespace GptWeb.DotNet.Api.Controllers
             if (isFirst == false)
             {
                 var assistantMessage = await _webMessageRepository.GetMessageByParentMsgIdAsync(input.Options.ParentMessageId);
-                //todo:回复丢失时 未处理
-                userMessage = await SaveUserMessage(assistantMessage, input.Prompt,
-                    request.ToJsonStr(), GPT3Tokenizer.Encode(input.Prompt).Count);
+                if (assistantMessage != null)
+                {
+                    //todo:回复丢失时 未处理
+                    userMessage = await SaveUserMessage(assistantMessage, input.Prompt,
+                        request.ToJsonStr(), GPT3Tokenizer.Encode(input.Prompt).Count);
+                }
             }
 
             #region 计算请求token
@@ -380,12 +386,15 @@ namespace GptWeb.DotNet.Api.Controllers
                     #endregion
                 }
 
+                stopWatch.Stop();
+                var duration = stopWatch.ElapsedMilliseconds;
                 if (isFirst)
                 {
                     await CreateFirstMsgAsync(input.Prompt, currentAnswer.ToString()
                         , assistantId
                         , request.ToJsonStr()
                         , response
+                        , duration
                         , input.SystemMessage);
                 }
                 else
@@ -397,7 +406,7 @@ namespace GptWeb.DotNet.Api.Controllers
                     }
 
                     await SaveAssistantContentMessage(userMessage, assistantId, currentAnswer.ToString(),
-                        response, GPT3Tokenizer.Encode(currentAnswer).Count);
+                        response, GPT3Tokenizer.Encode(currentAnswer).Count, duration);
 
                 }
 
@@ -460,10 +469,11 @@ namespace GptWeb.DotNet.Api.Controllers
         /// <param name="request">请求json</param>
         /// <param name="response">返回json todo:暂时不记录返回原始内容
         /// </param>
+        /// <param name="duration">响应时长</param>
         /// <param name="systemMsg">系统消息（如果有）</param>
         /// <returns></returns>
         private async Task CreateFirstMsgAsync(string userMsg, string assistantContent, string assistantId,
-            string request, string response, string systemMsg = "")
+            string request, string response, long duration, string systemMsg = "")
         {
             var cardNo = GetCurrentAuthCardNo();
             var messages = new List<GptWebMessage>();
@@ -493,11 +503,12 @@ namespace GptWeb.DotNet.Api.Controllers
                 ParentId = userMessage.ParentId,
                 GtpResponse = response,
                 GptMsgId = assistantId,
-                Tokens = GPT3Tokenizer.Encode(assistantContent).Count
+                Tokens = GPT3Tokenizer.Encode(assistantContent).Count,
+                ResponseDuration = duration
             };
             messages.Add(assistantMessage);
 
-            await _webMessageRepository.BatchCreateAsync(messages);
+            await _webMessageRepository.CreateAsync(messages);
         }
 
         /// <summary>
@@ -518,6 +529,12 @@ namespace GptWeb.DotNet.Api.Controllers
             //当前会话的所有消息
             var currentConversationMessage =
                 await _webMessageRepository.QueryMsgByConversationIdAsync(assistantMessage.ConversationId);
+            if (currentConversationMessage.Any() == false)
+            {
+                //todo: 未记录的 暂且丢失
+                return result;
+            }
+
             var validMessage = currentConversationMessage
                 .OrderBy(a => a.CreatedTime)
                 .ToList();
@@ -569,7 +586,7 @@ namespace GptWeb.DotNet.Api.Controllers
         /// </summary>
         /// <returns></returns>
         private async Task SaveAssistantContentMessage(GptWebMessage userMessage,
-            string assistantId, string assistantContent, string response, int tokens)
+            string assistantId, string assistantContent, string response, int tokens, long duration)
         {
             var cardNo = GetCurrentAuthCardNo();
             //回复消息
@@ -579,7 +596,8 @@ namespace GptWeb.DotNet.Api.Controllers
                 ParentId = userMessage.Id,
                 GtpResponse = response,
                 GptMsgId = assistantId,
-                Tokens = tokens
+                Tokens = tokens,
+                ResponseDuration = duration
             };
 
             await _webMessageRepository.CreateAsync(assistantMessage);

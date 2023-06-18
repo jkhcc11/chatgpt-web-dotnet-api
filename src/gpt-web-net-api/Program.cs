@@ -1,14 +1,7 @@
 using ChatGpt.Web.BaseInterface;
 using ChatGpt.Web.BaseInterface.Options;
-using ChatGpt.Web.IRepository.ActivationCodeSys;
-using ChatGpt.Web.IRepository.MessageHistory;
-using ChatGpt.Web.IService.OpenAiApi;
-using ChatGpt.Web.LiteDatabase;
-using ChatGpt.Web.LiteDatabase.Repository;
-using ChatGpt.Web.NetCore.Services;
 using GptWeb.DotNet.Api.JsonConvert;
 using GptWeb.DotNet.Api.ServicesExtensiones;
-using LiteDB;
 using Snowflake.Core;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,22 +15,27 @@ services.AddControllers()
     });
 services.AddHttpClient();
 services.AddMemoryCache();
-services.AddRepository();
 services.AddServices();
 
 //»°≈‰÷√◊¢»Î
-var config = builder.Services.BuildServiceProvider().GetService<IConfiguration>();
+var config = builder.Configuration;
 services.AddSingleton(_ => new IdGenerateExtension(new IdWorker(1, 1)));
-services.AddTransient(_ =>
+
+var dbType = config.GetValue<SupportDbType>("SupportDbType");
+switch (dbType)
 {
-    var connectionString = config.GetValue<string>("ConnectionStrings:LiteDb");
-    return new LiteDatabase(connectionString);
-});
-services.AddTransient(_ =>
-{
-    var connectionString = config.GetValue<string>("ConnectionStrings:LiteDbLog");
-    return new LogLiteDatabase(connectionString);
-});
+    case SupportDbType.LiteDB:
+        {
+            services.AddLiteDb(config);
+            break;
+        }
+    case SupportDbType.MongoDB:
+        {
+            services.AddMongodb(config);
+            break;
+        }
+}
+
 services.Configure<ChatGptWebConfig>(config.GetSection("ChatGptWebConfig"));
 services.Configure<WebResourceConfig>(config.GetSection("WebResource"));
 
@@ -57,6 +55,5 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 app.UseAuthorization();
 app.UseCors(defaultPolicy);
-
 app.MapControllers();
 app.Run();
