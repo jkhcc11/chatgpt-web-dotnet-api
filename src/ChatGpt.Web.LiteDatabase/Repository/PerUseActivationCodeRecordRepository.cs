@@ -8,7 +8,8 @@ namespace ChatGpt.Web.LiteDatabase.Repository
     /// <summary>
     /// 按次卡密记录 仓储实现
     /// </summary>
-    public class PerUseActivationCodeRecordRepository : BaseLiteDatabaseRepository<PerUseActivationCodeRecord, long>, IPerUseActivationCodeRecordRepository
+    public class PerUseActivationCodeRecordRepository : BaseLiteDatabaseRepository<PerUseActivationCodeRecord, long>,
+        IPerUseActivationCodeRecordRepository
     {
         public PerUseActivationCodeRecordRepository(LiteDB.LiteDatabase liteDatabase) : base(liteDatabase)
         {
@@ -33,22 +34,9 @@ namespace ChatGpt.Web.LiteDatabase.Repository
                 query = query.Where(a => a.CreatedTime.Date == date);
             }
 
-        /// <summary>
-        /// 根据日期模型Id统计次数
-        /// </summary>
-        /// <param name="date">日期</param>
-        /// <param name="cardNo">卡号</param>
-        /// <param name="modelId">模型ID</param>
-        /// <returns></returns>
-        public async Task<int> CountTimesByModelIdAsync(DateTime date, string cardNo, string modelId)
-        {
-            var query = DbCollection.Query()
-                .Where(a => a.CreatedTime.Date == date &&
-                            a.CardNo == cardNo &&
-                            a.ModelId == modelId);
             await Task.CompletedTask;
             return query.Count();
-        }
 
+        }
     }
 }
