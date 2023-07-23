@@ -1,8 +1,11 @@
-﻿using ChatGpt.Web.IRepository;
+﻿using System;
+using ChatGpt.Web.IRepository;
 using ChatGpt.Web.IRepository.ActivationCodeSys;
 using ChatGpt.Web.IRepository.MessageHistory;
 using ChatGpt.Web.MongoDB.Repository;
 using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
 
 namespace ChatGpt.Web.MongoDB
 {
@@ -14,6 +17,9 @@ namespace ChatGpt.Web.MongoDB
         /// <returns></returns>
         public static IServiceCollection AddMongodbRepository(this IServiceCollection services)
         {
+            //db utc  展示 local time
+            BsonSerializer.RegisterSerializer(DateTimeSerializer.LocalInstance);
+
             services.AddTransient<IGptWebMessageRepository, GptWebMessageRepository>();
             services.AddTransient<IActivationCodeRepository, ActivationCodeRepository>();
             services.AddTransient<IPerUseActivationCodeRecordRepository, PerUseActivationCodeRecordRepository>();

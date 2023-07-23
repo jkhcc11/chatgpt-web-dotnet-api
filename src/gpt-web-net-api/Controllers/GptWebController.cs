@@ -446,7 +446,7 @@ namespace GptWeb.DotNet.Api.Controllers
             var cardInfo = await _activationCodeRepository.QueryActivationCodeByTypeAsync(freeCodeType.Id);
 
             config.FreeCode = cardInfo.First().CardNo;
-            config.FreeCode4 = cardInfo.First().CardNo;
+            //config.FreeCode4 = cardInfo.First().CardNo;
             config.Description = currentConfig?.Description ?? "";
             config.HomeBtnHtml = currentConfig?.HomeBtnHtml ?? "";
             var result = new BaseGptWebDto<WebResourceConfig>()
