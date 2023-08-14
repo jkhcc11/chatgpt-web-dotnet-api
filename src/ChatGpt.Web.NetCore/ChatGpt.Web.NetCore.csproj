@@ -7,10 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ChatGpt.Web.IRepository\ChatGpt.Web.IRepository.csproj" />
     <ProjectReference Include="..\ChatGpt.Web.IService\ChatGpt.Web.IService.csproj" />
   </ItemGroup>
 

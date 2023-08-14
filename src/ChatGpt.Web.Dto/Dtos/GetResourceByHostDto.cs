@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 
-namespace ChatGpt.Web.BaseInterface.Options
+namespace ChatGpt.Web.Dto.Dtos
 {
     /// <summary>
-    /// Web资源配置
+    /// 获取全局资源Dto
     /// </summary>
-    public class WebResourceConfig
+    public class GetResourceByHostDto
     {
         /// <summary>
         /// 头像

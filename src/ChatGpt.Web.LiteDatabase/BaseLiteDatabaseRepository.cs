@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using ChatGpt.Web.BaseInterface;
 using LiteDB;
@@ -100,6 +101,42 @@ namespace ChatGpt.Web.LiteDatabase
         {
             await Task.CompletedTask;
             return DbCollection.FindAll().ToList();
+        }
+
+        /// <summary>
+        /// 分页查询
+        /// </summary>
+        /// <returns></returns>
+        public async Task<QueryPageDto<TEntity>> QueryPageListAsync(IQueryable<TEntity> query, int page, int pageSize)
+        {
+            //todo：待测试
+            var dbQuery = DbCollection.Query()
+                .Where(query.Expression as Expression<Func<TEntity, bool>>);
+
+            var total = dbQuery.LongCount();
+            var allData = dbQuery
+                .Skip((page - 1) * pageSize)
+                .ToList();
+
+            var dbResult = allData
+                .Take(pageSize)
+                .ToList();
+
+            return new QueryPageDto<TEntity>()
+            {
+                Total = total,
+                Items = dbResult
+            };
+        }
+
+        /// <summary>
+        /// 获取Queryable
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IQueryable<TEntity>> GetQueryableAsync()
+        {
+            await Task.CompletedTask;
+            return DbCollection.Query().ToEnumerable().AsQueryable();
         }
     }
 }

@@ -1,15 +1,18 @@
 ﻿using System.Text;
 using ChatGpt.Web.BaseInterface;
 using ChatGpt.Web.BaseInterface.Extensions;
-using ChatGpt.Web.BaseInterface.Options;
+using ChatGpt.Web.Dto.Dtos.ActivationCodeAdmin;
 using ChatGpt.Web.Dto.Inputs;
+using ChatGpt.Web.Dto.Inputs.ActivationCodeAdmin;
 using ChatGpt.Web.Entity;
 using ChatGpt.Web.Entity.ActivationCodeSys;
 using ChatGpt.Web.Entity.Enums;
 using ChatGpt.Web.IRepository;
 using ChatGpt.Web.IRepository.ActivationCodeSys;
+using ChatGpt.Web.IService;
+using ChatGpt.Web.IService.ActivationCodeSys;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace GptWeb.DotNet.Api.Controllers
 {
@@ -17,80 +20,35 @@ namespace GptWeb.DotNet.Api.Controllers
     /// 生成Code
     /// </summary>
     [ApiController]
-    [Route("general-code")]
-    public class GeneralCodeController : Controller
+    [Route("config-v2")]
+    [Authorize(Roles = nameof(CommonExtension.CommonRoleName.Root))]
+    public class GeneralCodeController : BaseController
     {
-        private readonly IActivationCodeRepository _activationCodeRepository;
-        private readonly IActivationCodeTypeV2Repository _activationCodeTypeV2Repository;
-        private readonly IGptWebConfigRepository _gptWebConfigRepository;
-
-        private readonly IConfiguration _configuration;
-        private readonly IdGenerateExtension _idGenerateExtension;
-        private readonly WebResourceConfig _webResourceConfig;
-
-        public GeneralCodeController(IActivationCodeRepository activationCodeRepository,
-            IConfiguration configuration, IdGenerateExtension idGenerateExtension,
-            IOptions<WebResourceConfig> recourseOptions,
-            IActivationCodeTypeV2Repository activationCodeTypeV2Repository,
-            IGptWebConfigRepository gptWebConfigRepository)
+        private readonly IActivationCodeAdminService _activationCodeAdminService;
+        private readonly IWebConfigAdminService _webConfigAdminService;
+        public GeneralCodeController(IActivationCodeAdminService activationCodeAdminService,
+            IWebConfigAdminService webConfigAdminService)
         {
-            _activationCodeRepository = activationCodeRepository;
-            _configuration = configuration;
-            _idGenerateExtension = idGenerateExtension;
-            _activationCodeTypeV2Repository = activationCodeTypeV2Repository;
-            _gptWebConfigRepository = gptWebConfigRepository;
-            _webResourceConfig = recourseOptions.Value;
+            _activationCodeAdminService = activationCodeAdminService;
+            _webConfigAdminService = webConfigAdminService;
         }
 
         #region 卡类型
-        [HttpDelete("clear-code-type")]
-        public async Task<IActionResult> DeleteAllCodeTypeAsync(string codeKey)
+        [HttpDelete("delete-code-type")]
+        public async Task<KdyResult> DeleteCodeTypeAsync(long id)
         {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != codeKey)
-            {
-                return Content("密钥错误");
-            }
-
-            var result = await _activationCodeTypeV2Repository.DeleteAllAsync();
-            return Content(result + "", "text/plain");
+            return await _activationCodeAdminService.DeleteCodeTypeAsync(id);
         }
 
-        [HttpGet("export-code-type")]
-        public async Task<IActionResult> ExportActivationCodeTypeAsync(string codeKey)
+        [HttpGet("query-cody-type")]
+        public async Task<KdyResult<QueryPageDto<QueryPageCodeTypeDto>>> QueryPageCodeTypeAsync(QueryPageCodeTypeInput input)
         {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != codeKey)
-            {
-                return Content("密钥错误");
-            }
-
-            var codeType = await _activationCodeTypeV2Repository.GetAllActivationCodeTypeAsync();
-            var resultSb = new StringBuilder();
-            resultSb.AppendLine($"本次导出数量：{codeType.Count}");
-            foreach (var item in codeType)
-            {
-                resultSb.AppendLine($"类型名：{item.CodeName}\r\n" +
-                                    $"Json：{item.ToJsonStr()}\r\n" +
-                                    $"Id：{(item.Id)}");
-            }
-
-            return Content(resultSb.ToString(), "text/plain");
+            return await _activationCodeAdminService.QueryPageCodeTypeAsync(input);
         }
 
-        /// <summary>
-        /// 创建卡类型
-        /// </summary>
-        /// <returns></returns>
-        [HttpPost("create-card-type")]
+        [HttpPost("create-update-card-type")]
         public async Task<IActionResult> CreateCardTypeAsync(CreateCardTypeInput input)
         {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != input.GeneralCodeKey)
-            {
-                return Content("密钥错误");
-            }
-
             if (input.SupportModelGroupNameItems.Any() == false)
             {
                 return Content("无效支持模型");
@@ -100,6 +58,8 @@ namespace GptWeb.DotNet.Api.Controllers
             {
                 return Content("限制未配置限制");
             }
+
+            
 
             var exits = await _activationCodeTypeV2Repository.CheckNameAsync(input.CardTypeName);
             if (exits)
@@ -146,12 +106,6 @@ namespace GptWeb.DotNet.Api.Controllers
         [HttpPost("update-card-type/{typeId}")]
         public async Task<IActionResult> UpdateCardTypeAsync(long typeId, CreateCardTypeInput input)
         {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != input.GeneralCodeKey)
-            {
-                return Content("密钥错误");
-            }
-
             if (input.SupportModelGroupNameItems.Any() == false)
             {
                 return Content("无效支持模型");
@@ -194,11 +148,6 @@ namespace GptWeb.DotNet.Api.Controllers
         [HttpPost("batch-general")]
         public async Task<IActionResult> BatchGeneralCodeAsync(BatchGeneralCodeInput input)
         {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != input.GeneralCodeKey)
-            {
-                return Content("密钥错误");
-            }
 
             var codeType = await _activationCodeTypeV2Repository.GetEntityByIdAsync(input.CodeTypeId);
             var resultSb = new StringBuilder();
@@ -221,12 +170,6 @@ namespace GptWeb.DotNet.Api.Controllers
         [HttpPost("export")]
         public async Task<IActionResult> ExportActivationCodeAsync(ExportActivationCodeInput input)
         {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != input.GeneralCodeKey)
-            {
-                return Content("密钥错误");
-            }
-
             var codeType = await _activationCodeTypeV2Repository.GetAllActivationCodeTypeAsync();
 
             var activationCode = await _activationCodeRepository
@@ -241,7 +184,9 @@ namespace GptWeb.DotNet.Api.Controllers
                                     $"模型：{string.Join(",", currentCodeType.SupportModelItems.Select(a => a.ModeId))}，" +
                                     $"是否激活：{(item.ActivateTime.HasValue ? "是" : "否")}，" +
                                     $"创建时间：{item.CreatedTime}，" +
-                                    $"激活时间：{(item.ActivateTime?.ToString())}");
+                                    $"激活时间：{(item.ActivateTime?.ToString())}" + 
+                                    $"详情：{item.ToJsonStr()}"
+                                    );
             }
 
             return Content(resultSb.ToString(), "text/plain");
@@ -250,12 +195,6 @@ namespace GptWeb.DotNet.Api.Controllers
         [HttpDelete("delete-code")]
         public async Task<IActionResult> DeleteActivationCodeAsync(string codeKey, string code)
         {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != codeKey)
-            {
-                return Content("密钥错误");
-            }
-
             var result = await _activationCodeRepository.DeleteAsync(new ActivationCode(1, code, 1));
             return Content(result + "", "text/plain");
         }
@@ -266,12 +205,6 @@ namespace GptWeb.DotNet.Api.Controllers
         [HttpGet("export-web-config")]
         public async Task<IActionResult> ExportGptWebConfigAsync(string codeKey)
         {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != codeKey)
-            {
-                return Content("密钥错误");
-            }
-
             var allConfig = await _gptWebConfigRepository.GetAllConfigAsync();
             var resultSb = new StringBuilder();
             foreach (var item in allConfig)
@@ -292,12 +225,6 @@ namespace GptWeb.DotNet.Api.Controllers
         [HttpPost("create-web-config")]
         public async Task<IActionResult> CreateGptWebConfigAsync(CreateGptWebConfigInput input)
         {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != input.GeneralCodeKey)
-            {
-                return Content("密钥错误");
-            }
-
             var allConfig = await _gptWebConfigRepository.GetAllConfigAsync();
             if (allConfig.Exists(a => a.SubDomainHost == input.SubDomainHost) ||
                 (string.IsNullOrEmpty(input.SubDomainHost) &&
@@ -320,12 +247,6 @@ namespace GptWeb.DotNet.Api.Controllers
         [HttpPost("update-web-config/{configId}")]
         public async Task<IActionResult> UpdateGptWebConfigAsync(long configId, CreateGptWebConfigInput input)
         {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != input.GeneralCodeKey)
-            {
-                return Content("密钥错误");
-            }
-
             var allConfig = await _gptWebConfigRepository.GetAllConfigAsync();
 
             var entity = allConfig.First(a => a.Id == configId);

@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using ChatGpt.Web.BaseInterface;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
 namespace ChatGpt.Web.MongoDB
 {
@@ -91,6 +94,39 @@ namespace ChatGpt.Web.MongoDB
         public virtual async Task<IReadOnlyList<TEntity>> GetAllListAsync()
         {
             return await DbCollection.AsQueryable().ToListAsync();
+        }
+
+        /// <summary>
+        /// 分页查询
+        /// </summary>
+        /// <returns></returns>
+        public virtual async Task<QueryPageDto<TEntity>> QueryPageListAsync(IQueryable<TEntity> query, int page, int pageSize)
+        {
+            //todo：待测试
+            var dbQuery = DbCollection.AsQueryable()
+                .Where(query.Expression as Expression<Func<TEntity, bool>>);
+
+            var total = await dbQuery.LongCountAsync();
+            var dbResult = await dbQuery
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return new QueryPageDto<TEntity>()
+            {
+                Total = total,
+                Items = dbResult
+            };
+        }
+
+        /// <summary>
+        /// 获取Queryable
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IQueryable<TEntity>> GetQueryableAsync()
+        {
+            await Task.CompletedTask;
+            return DbCollection.AsQueryable();
         }
     }
 }

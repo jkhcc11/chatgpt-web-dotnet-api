@@ -1,6 +1,9 @@
-﻿using ChatGpt.Web.IService.OpenAiApi;
+﻿using ChatGpt.Web.Dto;
+using ChatGpt.Web.IService.ActivationCodeSys;
+using ChatGpt.Web.IService.OpenAiApi;
 using ChatGpt.Web.LiteDatabase;
 using ChatGpt.Web.MongoDB;
+using ChatGpt.Web.NetCore.ActivationCodeSys;
 using ChatGpt.Web.NetCore.Services;
 using LiteDB;
 using MongoDB.Driver;
@@ -15,8 +18,10 @@ namespace GptWeb.DotNet.Api.ServicesExtensiones
         /// <returns></returns>
         public static IServiceCollection AddServices(this IServiceCollection services)
         {
+            services.AddAutoMapper(typeof(MapperProfile));
             services.AddTransient<IOpenAiDashboardApiHttpApi, OpenAiDashboardApiHttpApi>();
             services.AddTransient<IOpenAiHttpApi, OpenAiHttpApi>();
+            services.AddTransient<IActivationCodeService, ActivationCodeService>();
             return services;
         }
 

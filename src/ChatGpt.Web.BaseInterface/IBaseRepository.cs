@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace ChatGpt.Web.BaseInterface
@@ -45,5 +46,17 @@ namespace ChatGpt.Web.BaseInterface
         /// </summary>
         /// <returns></returns>
         Task<IReadOnlyList<TEntity>> GetAllListAsync();
+
+        /// <summary>
+        /// 分页查询
+        /// </summary>
+        /// <returns></returns>
+        Task<QueryPageDto<TEntity>> QueryPageListAsync(IQueryable<TEntity> query, int page, int pageSize);
+
+        /// <summary>
+        /// 获取Queryable
+        /// </summary>
+        /// <returns></returns>
+        Task<IQueryable<TEntity>> GetQueryableAsync();
     }
 }

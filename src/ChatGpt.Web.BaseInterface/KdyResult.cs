@@ -159,6 +159,11 @@
         /// <summary>
         /// 未授权
         /// </summary>
-        Unauthorized = 403
+        Unauthorized = 401,
+        
+        /// <summary>
+        /// 无权访问
+        /// </summary>
+        Forbidden = 403,
     }
 }
