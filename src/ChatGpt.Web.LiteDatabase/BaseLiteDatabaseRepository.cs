@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using ChatGpt.Web.BaseInterface;
+using ChatGpt.Web.BaseInterface.Extensions;
 using LiteDB;
 
 namespace ChatGpt.Web.LiteDatabase
@@ -107,11 +108,14 @@ namespace ChatGpt.Web.LiteDatabase
         /// 分页查询
         /// </summary>
         /// <returns></returns>
-        public async Task<QueryPageDto<TEntity>> QueryPageListAsync(IQueryable<TEntity> query, int page, int pageSize)
+        public virtual async Task<QueryPageDto<TEntity>> QueryPageListAsync(IQueryable<TEntity> query, int page, int pageSize)
         {
-            //todo：待测试
-            var dbQuery = DbCollection.Query()
-                .Where(query.Expression as Expression<Func<TEntity, bool>>);
+            var predicate = query.ToExpressionPredicate();
+            var dbQuery = DbCollection.Query();
+            if (predicate != null)
+            {
+                dbQuery = dbQuery.Where(predicate);
+            }
 
             var total = dbQuery.LongCount();
             var allData = dbQuery
@@ -122,6 +126,7 @@ namespace ChatGpt.Web.LiteDatabase
                 .Take(pageSize)
                 .ToList();
 
+            await Task.CompletedTask;
             return new QueryPageDto<TEntity>()
             {
                 Total = total,
@@ -133,10 +138,44 @@ namespace ChatGpt.Web.LiteDatabase
         /// 获取Queryable
         /// </summary>
         /// <returns></returns>
-        public async Task<IQueryable<TEntity>> GetQueryableAsync()
+        public virtual async Task<IQueryable<TEntity>> GetQueryableAsync()
         {
             await Task.CompletedTask;
             return DbCollection.Query().ToEnumerable().AsQueryable();
+        }
+
+        /// <summary>
+        /// 是否存在
+        /// </summary>
+        /// <returns></returns>
+        public async Task<bool> AnyAsync(IQueryable<TEntity> query)
+        {
+            var predicate = query.ToExpressionPredicate();
+            var dbQuery = DbCollection.Query();
+            if (predicate != null)
+            {
+                dbQuery = dbQuery.Where(predicate);
+            }
+
+            await Task.CompletedTask;
+            return dbQuery.Exists();
+        }
+
+        /// <summary>
+        /// 列表
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IReadOnlyList<TEntity>> ToListAsync(IQueryable<TEntity> query)
+        {
+            await Task.CompletedTask;
+            var predicate = query.ToExpressionPredicate();
+            var dbQuery = DbCollection.Query();
+            if (predicate != null)
+            {
+                dbQuery = dbQuery.Where(predicate);
+            }
+
+            return dbQuery.ToList();
         }
     }
 }

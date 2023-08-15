@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -54,6 +56,25 @@ namespace ChatGpt.Web.BaseInterface.Extensions
         public static T StrToModel<T>(this string temp)
         {
             return JsonConvert.DeserializeObject<T>(temp);
+        }
+
+        /// <summary>
+        /// Query转Lambda表达式
+        /// </summary>
+        /// <returns></returns>
+        public static Expression<Func<TEntity, bool>>? ToExpressionPredicate<TEntity>(this IQueryable<TEntity> query)
+        {
+            Expression<Func<TEntity, bool>>? predicate = null;
+
+            if (query.Expression is MethodCallExpression methodCallExpression
+                && methodCallExpression.Method.Name == "Where"
+                && methodCallExpression.Arguments[1] is UnaryExpression unaryExpression
+                && unaryExpression.Operand is LambdaExpression lambdaExpression)
+            {
+                predicate = (Expression<Func<TEntity, bool>>)lambdaExpression;
+            }
+
+            return predicate;
         }
     }
 }

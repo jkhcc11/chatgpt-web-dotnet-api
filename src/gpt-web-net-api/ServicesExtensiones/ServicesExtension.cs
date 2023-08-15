@@ -1,4 +1,5 @@
 ﻿using ChatGpt.Web.Dto;
+using ChatGpt.Web.IService;
 using ChatGpt.Web.IService.ActivationCodeSys;
 using ChatGpt.Web.IService.OpenAiApi;
 using ChatGpt.Web.LiteDatabase;
@@ -21,7 +22,12 @@ namespace GptWeb.DotNet.Api.ServicesExtensiones
             services.AddAutoMapper(typeof(MapperProfile));
             services.AddTransient<IOpenAiDashboardApiHttpApi, OpenAiDashboardApiHttpApi>();
             services.AddTransient<IOpenAiHttpApi, OpenAiHttpApi>();
+
             services.AddTransient<IActivationCodeService, ActivationCodeService>();
+            services.AddTransient<IWebConfigService, WebConfigService>();
+
+            services.AddTransient<IWebConfigAdminService, WebConfigAdminService>();
+            services.AddTransient<IActivationCodeAdminService, ActivationCodeAdminService>();
             return services;
         }
 

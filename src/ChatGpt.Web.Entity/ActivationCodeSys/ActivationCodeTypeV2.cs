@@ -10,6 +10,7 @@ namespace ChatGpt.Web.Entity.ActivationCodeSys
     /// </summary>
     public class ActivationCodeTypeV2 : BaseEntity<long>
     {
+        public const string RootCodeName = "system";
         public const string Gpt3GroupName = "gpt3";
         /// <summary>
         /// Gpt3 16k

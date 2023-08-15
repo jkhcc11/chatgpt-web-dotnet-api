@@ -13,17 +13,16 @@ namespace ChatGpt.Web.NetCore.Services
     /// <summary>
     /// 配置管理 服务实现
     /// </summary>
-    public class WebConfigAdminService: BaseService, IWebConfigAdminService
+    public class WebConfigAdminService : BaseService, IWebConfigAdminService
     {
         private readonly IGptWebConfigRepository _gptWebConfigRepository;
-        private readonly IMapper _mapper;
         private readonly IdGenerateExtension _idGenerateExtension;
 
-        public WebConfigAdminService(IGptWebConfigRepository gptWebConfigRepository, IMapper mapper, 
-            IdGenerateExtension idGenerateExtension)
+        public WebConfigAdminService(IMapper baseMapper, IdGenerateExtension baseIdGenerate,
+            IGptWebConfigRepository gptWebConfigRepository, IdGenerateExtension idGenerateExtension)
+            : base(baseMapper, baseIdGenerate)
         {
             _gptWebConfigRepository = gptWebConfigRepository;
-            _mapper = mapper;
             _idGenerateExtension = idGenerateExtension;
         }
 
@@ -39,7 +38,7 @@ namespace ChatGpt.Web.NetCore.Services
             {
                 Total = pageResult.Total,
                 Items =
-                    _mapper.Map<IReadOnlyList<GptWebConfig>, IReadOnlyList<QueryPageWebConfigDto>>(pageResult
+                    BaseMapper.Map<IReadOnlyList<GptWebConfig>, IReadOnlyList<QueryPageWebConfigDto>>(pageResult
                         .Items)
             };
             return KdyResult.Success(result);
@@ -55,7 +54,7 @@ namespace ChatGpt.Web.NetCore.Services
             {
                 #region 修改
                 var codeType = await _gptWebConfigRepository.GetEntityByIdAsync(input.Id.Value);
-                codeType.SubDomainHost=input.SubDomainHost;
+                codeType.SubDomainHost = input.SubDomainHost;
                 codeType.Description = input.Description;
                 codeType.HomeBtnHtml = input.HomeBtnHtml;
 
@@ -80,7 +79,7 @@ namespace ChatGpt.Web.NetCore.Services
             {
                 SubDomainHost = input.SubDomainHost,
                 Description = input.Description,
-                HomeBtnHtml= input.HomeBtnHtml,
+                HomeBtnHtml = input.HomeBtnHtml,
 
                 Avatar = input.Avatar,
                 Name = input.Name,
@@ -110,5 +109,6 @@ namespace ChatGpt.Web.NetCore.Services
             var result = await _gptWebConfigRepository.DeleteAsync(entity);
             return result ? KdyResult.Success() : KdyResult.Error(KdyResultCode.Error, "操作失败");
         }
+
     }
 }

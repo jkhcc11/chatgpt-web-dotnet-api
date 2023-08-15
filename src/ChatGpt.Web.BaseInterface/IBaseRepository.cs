@@ -58,5 +58,18 @@ namespace ChatGpt.Web.BaseInterface
         /// </summary>
         /// <returns></returns>
         Task<IQueryable<TEntity>> GetQueryableAsync();
+
+        /// <summary>
+        /// 是否存在
+        /// </summary>
+        /// <returns></returns>
+        Task<bool> AnyAsync(IQueryable<TEntity> query);
+
+
+        /// <summary>
+        /// 列表
+        /// </summary>
+        /// <returns></returns>
+        Task<IReadOnlyList<TEntity>> ToListAsync(IQueryable<TEntity> query);
     }
 }

@@ -14,6 +14,7 @@ services.AddControllers()
     .AddJsonOptions(conf =>
     {
         conf.JsonSerializerOptions.Converters.Add(new DateTimeConverter());
+        conf.JsonSerializerOptions.Converters.Add(new LongConverter());
     });
 services.AddHttpClient();
 services.AddMemoryCache();

@@ -45,5 +45,11 @@ namespace ChatGpt.Web.IService.ActivationCodeSys
         /// </summary>
         /// <returns></returns>
         Task<KdyResult> DeleteActivationCodeAsync(long id);
+
+        /// <summary>
+        /// 初始化root卡信息
+        /// </summary>
+        /// <returns></returns>
+        Task<KdyResult> InitRootCardNoInfoAsync();
     }
 }

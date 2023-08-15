@@ -25,6 +25,6 @@ namespace ChatGpt.Web.Dto.Dtos.ActivationCodeAdmin
         /// <summary>
         /// 卡密类型名
         /// </summary>
-        public string CodeTypeName { get; set; } = "";
+        public string? CodeTypeName { get; set; }
     }
 }

@@ -20,16 +20,14 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
     {
         private readonly IActivationCodeRepository _activationCodeRepository;
         private readonly IActivationCodeTypeV2Repository _activationCodeTypeV2Repository;
-        private readonly IMapper _mapper;
         private readonly IdGenerateExtension _idGenerateExtension;
 
-        public ActivationCodeAdminService(IActivationCodeRepository activationCodeRepository,
-            IActivationCodeTypeV2Repository activationCodeTypeV2Repository,
-            IMapper mapper, IdGenerateExtension idGenerateExtension)
+        public ActivationCodeAdminService(IMapper baseMapper, IdGenerateExtension baseIdGenerate,
+            IActivationCodeRepository activationCodeRepository, IActivationCodeTypeV2Repository activationCodeTypeV2Repository,
+            IdGenerateExtension idGenerateExtension) : base(baseMapper, baseIdGenerate)
         {
             _activationCodeRepository = activationCodeRepository;
             _activationCodeTypeV2Repository = activationCodeTypeV2Repository;
-            _mapper = mapper;
             _idGenerateExtension = idGenerateExtension;
         }
 
@@ -40,12 +38,17 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
         public async Task<KdyResult<QueryPageDto<QueryPageCodeTypeDto>>> QueryPageCodeTypeAsync(QueryPageCodeTypeInput input)
         {
             var query = await _activationCodeTypeV2Repository.GetQueryableAsync();
+            if (string.IsNullOrEmpty(input.KeyWord) == false)
+            {
+                query = query.Where(a => a.CodeName.Contains(input.KeyWord));
+            }
+
             var pageResult = await _activationCodeTypeV2Repository.QueryPageListAsync(query, input.Page, input.PageSize);
             var result = new QueryPageDto<QueryPageCodeTypeDto>()
             {
                 Total = pageResult.Total,
                 Items =
-                    _mapper.Map<IReadOnlyList<ActivationCodeTypeV2>, IReadOnlyList<QueryPageCodeTypeDto>>(pageResult
+                    BaseMapper.Map<IReadOnlyList<ActivationCodeTypeV2>, IReadOnlyList<QueryPageCodeTypeDto>>(pageResult
                         .Items)
             };
             return KdyResult.Success(result);
@@ -57,6 +60,15 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
         /// <returns></returns>
         public async Task<KdyResult> CreateAndUpdateCodeTypeAsync(CreateAndUpdateCodeTypeInput input)
         {
+            //todo:这里的执行问题
+            var anyQuery = await _activationCodeTypeV2Repository.GetQueryableAsync();
+            anyQuery = anyQuery.Where(a => a.CodeName == input.CardTypeName);
+            if (input.Id.HasValue)
+            {
+                anyQuery = anyQuery.Where(a => a.Id != input.Id);
+            }
+
+
             var supportModelItems = new List<SupportModeItem>();
             foreach (var item in input.SupportModelGroupNameItems)
             {
@@ -85,7 +97,7 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
 
                 codeType.SupportModelItems = supportModelItems;
                 await _activationCodeTypeV2Repository.UpdateAsync(codeType);
-                return KdyResult.Success(); 
+                return KdyResult.Success();
                 #endregion
             }
 
@@ -114,7 +126,7 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
             {
                 dbCodeType
             });
-            return KdyResult.Success(); 
+            return KdyResult.Success();
             #endregion
         }
 
@@ -141,7 +153,7 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
             {
                 Total = pageResult.Total,
                 Items =
-                    _mapper.Map<IReadOnlyList<ActivationCode>, IReadOnlyList<QueryPageActivationCodeDto>>(pageResult
+                    BaseMapper.Map<IReadOnlyList<ActivationCode>, IReadOnlyList<QueryPageActivationCodeDto>>(pageResult
                         .Items)
             };
             return KdyResult.Success(result);
@@ -176,5 +188,36 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
             var result = await _activationCodeRepository.DeleteAsync(entity);
             return result ? KdyResult.Success() : KdyResult.Error(KdyResultCode.Error, "操作失败");
         }
+
+        /// <summary>
+        /// 初始化root卡信息
+        /// </summary>
+        /// <returns></returns>
+        public async Task<KdyResult> InitRootCardNoInfoAsync()
+        {
+            var anyCodeTypeQuery = await _activationCodeTypeV2Repository.GetQueryableAsync();
+            anyCodeTypeQuery = anyCodeTypeQuery.Where(a => a.CodeName == ActivationCodeTypeV2.RootCodeName);
+            if (await _activationCodeTypeV2Repository.AnyAsync(anyCodeTypeQuery))
+            {
+                return KdyResult.Error(KdyResultCode.Error, "已存在,初始化失败,前往DB查看");
+            }
+
+            var codeType = new ActivationCodeTypeV2(BaseIdGenerate.GenerateId(), ActivationCodeTypeV2.RootCodeName,
+                new List<SupportModeItem>())
+            {
+                ValidDays = 999999
+            };
+            var activationCode =
+                new ActivationCode(BaseIdGenerate.GenerateId(), Guid.NewGuid().ToString(), codeType.Id)
+                {
+                    ActivateTime = DateTime.Now
+                };
+
+            await _activationCodeTypeV2Repository.CreateAsync(codeType);
+            await _activationCodeRepository.CreateAsync(activationCode);
+
+            return KdyResult.Success(activationCode.CardNo);
+        }
+
     }
 }

@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
+using ChatGpt.Web.Dto.Dtos;
 using ChatGpt.Web.Dto.Dtos.ActivationCodeAdmin;
+using ChatGpt.Web.Entity;
 using ChatGpt.Web.Entity.ActivationCodeSys;
 
 namespace ChatGpt.Web.Dto
@@ -10,6 +12,7 @@ namespace ChatGpt.Web.Dto
         {
             CreateMap<ActivationCodeTypeV2, QueryPageCodeTypeDto>();
             CreateMap<ActivationCode, QueryPageActivationCodeDto>();
+            CreateMap<GptWebConfig, QueryPageWebConfigDto>();
         }
     }
 }

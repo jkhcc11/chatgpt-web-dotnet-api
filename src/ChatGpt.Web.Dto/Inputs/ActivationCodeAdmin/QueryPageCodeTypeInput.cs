@@ -7,6 +7,9 @@ namespace ChatGpt.Web.Dto.Inputs.ActivationCodeAdmin
     /// </summary>
     public class QueryPageCodeTypeInput : QueryPageInput
     {
-
+        /// <summary>
+        /// 关键字
+        /// </summary>
+        public string? KeyWord { get; set; }
     }
 }

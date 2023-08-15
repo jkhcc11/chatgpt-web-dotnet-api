@@ -17,14 +17,21 @@ namespace ChatGpt.Web.BaseInterface
 
     public abstract class QueryPageInput
     {
+        protected const int MaxPageSize = 1000;
+        private int _pageSize = 10;
+
         /// <summary>
         /// 分页大小
         /// </summary>
-        public int PageSize { get; set; }
+        public int PageSize
+        {
+            get => _pageSize;
+            set => _pageSize = value > MaxPageSize ? MaxPageSize : value;
+        }
 
         /// <summary>
         /// 页
         /// </summary>
-        public int Page { get; set; }
+        public int Page { get; set; } = 1;
     }
 }
