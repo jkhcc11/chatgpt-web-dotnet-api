@@ -16,6 +16,7 @@ services.AddControllers()
         conf.JsonSerializerOptions.Converters.Add(new DateTimeConverter());
         conf.JsonSerializerOptions.Converters.Add(new LongConverter());
     });
+services.AddHttpContextAccessor();
 services.AddHttpClient();
 services.AddMemoryCache();
 services.AddServices();
@@ -60,6 +61,7 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
 
 app.UseAuthentication();
 // Configure the HTTP request pipeline.

@@ -36,7 +36,7 @@ namespace ChatGpt.Web.BaseInterface
         Task<bool> UpdateAsync(TEntity entity);
 
         /// <summary>
-        /// 删除
+        /// 删除 todo:软删除 目前暂为硬删
         /// </summary>
         /// <returns></returns>
         Task<bool> DeleteAsync(TEntity entity);

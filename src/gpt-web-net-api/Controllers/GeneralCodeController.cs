@@ -4,7 +4,6 @@ using ChatGpt.Web.Dto.Dtos;
 using ChatGpt.Web.Dto.Dtos.ActivationCodeAdmin;
 using ChatGpt.Web.Dto.Inputs;
 using ChatGpt.Web.Dto.Inputs.ActivationCodeAdmin;
-using ChatGpt.Web.IRepository.ActivationCodeSys;
 using ChatGpt.Web.IService;
 using ChatGpt.Web.IService.ActivationCodeSys;
 using Microsoft.AspNetCore.Authorization;
@@ -20,16 +19,13 @@ namespace GptWeb.DotNet.Api.Controllers
     [Authorize(Roles = nameof(CommonExtension.CommonRoleName.Root))]
     public class GeneralCodeController : BaseController
     {
-        private readonly IActivationCodeTypeV2Repository _activationCodeTypeV2Repository;
         private readonly IActivationCodeAdminService _activationCodeAdminService;
         private readonly IWebConfigAdminService _webConfigAdminService;
         public GeneralCodeController(IActivationCodeAdminService activationCodeAdminService,
-            IWebConfigAdminService webConfigAdminService,
-            IActivationCodeTypeV2Repository activationCodeTypeV2Repository)
+            IWebConfigAdminService webConfigAdminService)
         {
             _activationCodeAdminService = activationCodeAdminService;
             _webConfigAdminService = webConfigAdminService;
-            _activationCodeTypeV2Repository = activationCodeTypeV2Repository;
         }
 
         /// <summary>
@@ -49,9 +45,9 @@ namespace GptWeb.DotNet.Api.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpDelete("delete-card-type")]
-        public async Task<KdyResult> DeleteCodeTypeAsync(long id)
+        public async Task<KdyResult> DeleteCodeTypeAsync(BaseIdInput input)
         {
-            return await _activationCodeAdminService.DeleteCodeTypeAsync(id);
+            return await _activationCodeAdminService.DeleteCodeTypeAsync(input.Id);
         }
 
         /// <summary>
@@ -104,12 +100,6 @@ namespace GptWeb.DotNet.Api.Controllers
         public async Task<KdyResult<QueryPageDto<QueryPageActivationCodeDto>>> QueryPageActivationCodeAsync([FromQuery] QueryPageActivationCodeInput input)
         {
             var resultDto = await _activationCodeAdminService.QueryPageActivationCodeAsync(input);
-            var allCodeType = await _activationCodeTypeV2Repository.GetAllListAsync();
-            foreach (var item in resultDto.Data.Items)
-            {
-                item.CodeTypeName = allCodeType.FirstOrDefault(a => a.Id == item.CodyTypeId)?.CodeName;
-            }
-
             return resultDto;
         }
 
@@ -118,9 +108,9 @@ namespace GptWeb.DotNet.Api.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpDelete("delete-code")]
-        public async Task<KdyResult> DeleteActivationCodeAsync(long id)
+        public async Task<KdyResult> DeleteActivationCodeAsync(BaseIdInput input)
         {
-            return await _activationCodeAdminService.DeleteActivationCodeAsync(id);
+            return await _activationCodeAdminService.DeleteActivationCodeAsync(input.Id);
         }
 
         #endregion
@@ -152,9 +142,9 @@ namespace GptWeb.DotNet.Api.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpDelete("delete-web-config")]
-        public async Task<KdyResult> DeleteWebConfigAsync(long id)
+        public async Task<KdyResult> DeleteWebConfigAsync(BaseIdInput input)
         {
-            return await _webConfigAdminService.DeleteWebConfigAsync(id);
+            return await _webConfigAdminService.DeleteWebConfigAsync(input.Id);
         }
         #endregion
     }

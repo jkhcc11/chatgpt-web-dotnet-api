@@ -1,11 +1,12 @@
-﻿using System;
+﻿using ChatGpt.Web.BaseInterface;
+using System;
 
 namespace ChatGpt.Web.Dto.Dtos.ActivationCodeAdmin
 {
     /// <summary>
     /// 分页获取卡密
     /// </summary>
-    public class QueryPageActivationCodeDto
+    public class QueryPageActivationCodeDto : BaseEntityDto<long>
     {
         /// <summary>
         /// 卡密号

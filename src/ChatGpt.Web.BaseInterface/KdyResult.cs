@@ -1,4 +1,6 @@
-﻿namespace ChatGpt.Web.BaseInterface
+﻿using Newtonsoft.Json;
+
+namespace ChatGpt.Web.BaseInterface
 {
     /// <summary>
     /// Service 统一返回

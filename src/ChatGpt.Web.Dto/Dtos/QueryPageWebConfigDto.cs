@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using ChatGpt.Web.BaseInterface;
+using System.Collections.Generic;
 
 namespace ChatGpt.Web.Dto.Dtos
 {
     /// <summary>
     /// 分页获取站点配置
     /// </summary>
-    public class QueryPageWebConfigDto
+    public class QueryPageWebConfigDto: BaseEntityDto<long>
     {
         /// <summary>
         /// 子域名Host

@@ -119,6 +119,7 @@ namespace ChatGpt.Web.LiteDatabase
 
             var total = dbQuery.LongCount();
             var allData = dbQuery
+                .OrderByDescending(a=>a.CreatedTime)
                 .Skip((page - 1) * pageSize)
                 .ToList();
 

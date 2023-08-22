@@ -5,6 +5,7 @@ using ChatGpt.Web.Dto.Dtos;
 using ChatGpt.Web.Dto.Inputs;
 using ChatGpt.Web.IRepository;
 using System.Collections.Generic;
+using System.Linq;
 using AutoMapper;
 using ChatGpt.Web.Entity;
 
@@ -33,6 +34,12 @@ namespace ChatGpt.Web.NetCore.Services
         public async Task<KdyResult<QueryPageDto<QueryPageWebConfigDto>>> QueryPageWebConfigAsync(QueryPageWebConfigInput input)
         {
             var query = await _gptWebConfigRepository.GetQueryableAsync();
+            if (string.IsNullOrEmpty(input.KeyWord) == false)
+            {
+                query = query.Where(a => a.SubDomainHost.Contains(input.KeyWord) ||
+                                         a.Name.Contains(input.KeyWord));
+            }
+
             var pageResult = await _gptWebConfigRepository.QueryPageListAsync(query, input.Page, input.PageSize);
             var result = new QueryPageDto<QueryPageWebConfigDto>()
             {
@@ -50,6 +57,26 @@ namespace ChatGpt.Web.NetCore.Services
         /// <returns></returns>
         public async Task<KdyResult> CreateAndUpdateWebConfigAsync(CreateAndUpdateWebConfigInput input)
         {
+            var anyQuery = await _gptWebConfigRepository.GetQueryableAsync();
+            if (string.IsNullOrEmpty(input.SubDomainHost) == false)
+            {
+                anyQuery = anyQuery.Where(a => a.SubDomainHost == input.SubDomainHost);
+                if (input.Id.HasValue)
+                {
+                    anyQuery = anyQuery.Where(a => a.Id != input.Id);
+                }
+            }
+            else
+            {
+                //检查默认配置
+                anyQuery = anyQuery.Where(a => string.IsNullOrEmpty(a.SubDomainHost));
+            }
+
+            if (await _gptWebConfigRepository.AnyAsync(anyQuery))
+            {
+                return KdyResult.Error(KdyResultCode.Error, "已存在，操作失败");
+            }
+
             if (input.Id.HasValue)
             {
                 #region 修改

@@ -10,7 +10,8 @@ namespace ChatGpt.Web.Dto
     {
         public MapperProfile()
         {
-            CreateMap<ActivationCodeTypeV2, QueryPageCodeTypeDto>();
+            CreateMap<ActivationCodeTypeV2, QueryPageCodeTypeDto>()
+                .ForMember(dest => dest.CardTypeName, target => target.MapFrom(source => source.CodeName));
             CreateMap<ActivationCode, QueryPageActivationCodeDto>();
             CreateMap<GptWebConfig, QueryPageWebConfigDto>();
         }

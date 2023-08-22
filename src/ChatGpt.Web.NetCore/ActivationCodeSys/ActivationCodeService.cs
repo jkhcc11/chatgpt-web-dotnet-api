@@ -113,16 +113,24 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
         /// <returns></returns>
         public async Task<KdyResult> CheckCardNoIsValidWithFirstAsync(string cardNo)
         {
-            var cacheValue = await GetCardInfoByCacheAsync(cardNo);
-            if (cacheValue == null)
+            var cardInfoCache = await GetCardInfoByCacheAsync(cardNo);
+            if (cardInfoCache == null)
             {
                 return KdyResult.Error(KdyResultCode.Unauthorized, "无效卡密");
             }
 
-            if (cacheValue.ActivateTime.HasValue == false)
+            if (cardInfoCache.ActivateTime.HasValue == false)
             {
-                cacheValue.ActivateTime = DateTime.Now;
-                await _activationCodeRepository.UpdateAsync(cacheValue);
+                cardInfoCache.ActivateTime = DateTime.Now;
+                await _activationCodeRepository.UpdateAsync(cardInfoCache);
+            }
+
+            //卡类型
+            var codeType = await GetCodeTypeByCacheAsync(cardInfoCache.CodyTypeId);
+            var expiryTime = cardInfoCache.ActivateTime.Value.AddDays(codeType.ValidDays);
+            if (DateTime.Now > expiryTime)
+            {
+                return KdyResult.Error(KdyResultCode.Unauthorized, "卡密已过期");
             }
 
             return KdyResult.Success();

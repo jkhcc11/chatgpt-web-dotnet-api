@@ -5,6 +5,9 @@ using System.Security.Claims;
 using System.Text.Encodings.Web;
 using ChatGpt.Web.BaseInterface.Extensions;
 using ChatGpt.Web.IService.ActivationCodeSys;
+using Microsoft.AspNetCore.Http;
+using ChatGpt.Web.BaseInterface;
+using ChatGpt.Web.Dto;
 
 namespace GptWeb.DotNet.Api.ServicesExtensiones
 {
@@ -52,6 +55,11 @@ namespace GptWeb.DotNet.Api.ServicesExtensiones
                 return AuthenticateResult.Fail("error");
             }
 
+            if (Request.Method == "OPTIONS")
+            {
+                return AuthenticateResult.NoResult();
+            }
+
             //匿名标识
             var allowAnonymous = endPoint.Metadata.Any(em => em.GetType() == typeof(AllowAnonymousAttribute));
             if (allowAnonymous)
@@ -64,6 +72,7 @@ namespace GptWeb.DotNet.Api.ServicesExtensiones
             var token = Request.Headers["Authorization"].ToString();
             if (string.IsNullOrEmpty(token))
             {
+                Response.Headers.Add("Access-Control-Allow-Origin", "*");
                 return AuthenticateResult.Fail("Token is empty");
             }
 
@@ -72,6 +81,7 @@ namespace GptWeb.DotNet.Api.ServicesExtensiones
             if (isValid == false)
             {
                 // 如果令牌无效，则返回未授权状态
+                Response.Headers.Add("Access-Control-Allow-Origin", "*");
                 return AuthenticateResult.Fail("Invalid token");
             }
 
@@ -94,6 +104,17 @@ namespace GptWeb.DotNet.Api.ServicesExtensiones
 
             // 返回成功的身份验证结果
             return AuthenticateResult.Success(ticket);
+        }
+
+        protected override Task HandleForbiddenAsync(AuthenticationProperties properties)
+        {
+            Response.Headers.Add("Access-Control-Allow-Origin", "*");
+            Response.StatusCode = StatusCodes.Status403Forbidden;
+            var result = new BaseGptWebDto<string>("Forbidden")
+            {
+                ResultCode = KdyResultCode.Forbidden
+            };
+            return Response.WriteAsJsonAsync(result);
         }
     }
 }

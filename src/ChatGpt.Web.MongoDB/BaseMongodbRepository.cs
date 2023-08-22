@@ -112,6 +112,7 @@ namespace ChatGpt.Web.MongoDB
 
             var total = await dbQuery.LongCountAsync();
             var dbResult = await dbQuery
+                .OrderByDescending(a => a.CreatedTime)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();

@@ -1,4 +1,5 @@
-﻿using ChatGpt.Web.Entity.ActivationCodeSys;
+﻿using ChatGpt.Web.BaseInterface;
+using ChatGpt.Web.Entity.ActivationCodeSys;
 using ChatGpt.Web.Entity.Enums;
 using System.Collections.Generic;
 
@@ -7,12 +8,12 @@ namespace ChatGpt.Web.Dto.Dtos.ActivationCodeAdmin
     /// <summary>
     /// 分页获取卡密类型
     /// </summary>
-    public class QueryPageCodeTypeDto
+    public class QueryPageCodeTypeDto : BaseEntityDto<long>
     {
         /// <summary>
         /// 卡密名称
         /// </summary>
-        public string CodeName { get; set; } = "";
+        public string CardTypeName { get; set; } = "";
 
         /// <summary>
         /// 支持聊天系统类型

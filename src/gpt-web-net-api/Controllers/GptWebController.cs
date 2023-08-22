@@ -70,7 +70,7 @@ namespace GptWeb.DotNet.Api.Controllers
                 auth = true,
                 model = "ChatGPTAPI",
             };
-            var result = new BaseGptWebDto<object>()
+            var result = new BaseGptWebDto<object>(null)
             {
                 Data = data,
                 ResultCode = KdyResultCode.Success
@@ -90,15 +90,14 @@ namespace GptWeb.DotNet.Api.Controllers
             var check = await _activationCodeService.CheckCardNoIsValidWithFirstAsync(input.Token);
             if (check.IsSuccess == false)
             {
-                return new JsonResult(new BaseGptWebDto<string?>()
+                return new JsonResult(new BaseGptWebDto<string?>(check.Msg)
                 {
-                    Data = check.Msg,
-                    ResultCode = KdyResultCode.Unauthorized
+                    ResultCode = KdyResultCode.Error
                 });
             }
 
             await Task.CompletedTask;
-            var result = new BaseGptWebDto<string>()
+            var result = new BaseGptWebDto<string>(null)
             {
                 Data = "login success",
                 ResultCode = KdyResultCode.Success
@@ -119,16 +118,15 @@ namespace GptWeb.DotNet.Api.Controllers
             if (cardInfo == null ||
                 cardInfo.ActivateTime.HasValue == false)
             {
-                return new JsonResult(new BaseGptWebDto<object>()
+                return new JsonResult(new BaseGptWebDto<object>("获取失败")
                 {
-                    Message = "获取失败",
                     ResultCode = KdyResultCode.Error
                 });
             }
 
             //卡类型
             var cardType = await _activationCodeService.GetCodeTypeByCacheAsync(cardInfo.CodyTypeId);
-            var result = new BaseGptWebDto<object>()
+            var result = new BaseGptWebDto<object>(null)
             {
                 Data = new
                 {
@@ -167,9 +165,6 @@ namespace GptWeb.DotNet.Api.Controllers
             }
 
             var codeType = await _activationCodeService.GetCodeTypeByCacheAsync(cardInfo.CodyTypeId);
-            var supportModelItem = codeType.SupportModelItems.First(a => a.ModeId == input.ApiModel);
-            var maxCountItem =
-                codeType.MaxCountItems?.FirstOrDefault(a => a.ModeGroupName == supportModelItem.ModeGroupName);
             #endregion
 
             #region 权限校验
@@ -177,14 +172,18 @@ namespace GptWeb.DotNet.Api.Controllers
             var isAccess = await _activationCodeService.CheckCardNoIsAccessAsync(cardInfo, codeType, input.ApiModel);
             if (isAccess.IsSuccess == false)
             {
-                await writer.WriteLineAsync(new BaseGptWebDto<string?>()
+                await writer.WriteLineAsync(new BaseGptWebDto<string?>(isAccess.Msg)
                 {
-                    Data = isAccess.Msg,
                     ResultCode = KdyResultCode.Forbidden
                 }.ToJsonStr());
                 await writer.FlushAsync();
                 return;
             }
+
+            //权限校验完后 获取信息
+            var supportModelItem = codeType.SupportModelItems.First(a => a.ModeId == input.ApiModel);
+            var maxCountItem =
+                codeType.MaxCountItems?.FirstOrDefault(a => a.ModeGroupName == supportModelItem.ModeGroupName);
 
             //次数
             KdyResult checkTimes;
@@ -199,9 +198,8 @@ namespace GptWeb.DotNet.Api.Controllers
 
             if (checkTimes.IsSuccess == false)
             {
-                await writer.WriteLineAsync(new BaseGptWebDto<string?>()
+                await writer.WriteLineAsync(new BaseGptWebDto<string?>(checkTimes.Msg)
                 {
-                    Data = checkTimes.Msg,
                     ResultCode = KdyResultCode.Forbidden
                 }.ToJsonStr());
                 await writer.FlushAsync();
@@ -269,15 +267,12 @@ namespace GptWeb.DotNet.Api.Controllers
                 var requestTokenizer = GPT3Tokenizer.Encode(requestContextSb);
                 if (requestTokenizer.Count > maxRequestToken)
                 {
-                    var errorResult = new BaseGptWebDto<string>()
-                    {
-                        Message = $"系统提示：当前请求超出最大请求字符{maxCountItem?.MaxRequestToken}tokens，当前：{requestTokenizer.Count} tokens. 解决方法如下：\n" +
-                                  "1、尝试关掉上下文开关或减少输入次数\n" +
-                                  "2、新建聊天窗口\n" +
-                                  "3、前往设置页面切换模型（gpt3所有模型不限制）\n" +
-                                  "4、购买卡密，放宽限制\n" +
-                                  "温馨提示：一个汉字算2tokens,一个单词算1tokens"
-                    };
+                    var errorResult = new BaseGptWebDto<string>($"系统提示：当前请求超出最大请求字符{maxCountItem?.MaxRequestToken}tokens，当前：{requestTokenizer.Count} tokens. 解决方法如下：\n" +
+                                                                "1、尝试关掉上下文开关或减少输入次数\n" +
+                                                                "2、新建聊天窗口\n" +
+                                                                "3、前往设置页面切换模型（gpt3所有模型不限制）\n" +
+                                                                "4、购买卡密，放宽限制\n" +
+                                                                "温馨提示：一个汉字算2tokens,一个单词算1tokens");
 
                     await writer.WriteLineAsync(errorResult.ToJsonStr());
                     await writer.FlushAsync();
@@ -296,10 +291,7 @@ namespace GptWeb.DotNet.Api.Controllers
                 _logger.LogError("Gpt返回失败，{reqMsg},{responseMsg}",
                     request.ToJsonStr(),
                     result.ToJsonStr());
-                var errorResult = new BaseGptWebDto<string>()
-                {
-                    Message = $"OpenAi返回\n\n\n{result.Msg}"
-                };
+                var errorResult = new BaseGptWebDto<string>($"OpenAi返回\n\n\n{result.Msg}");
 
                 await writer.WriteLineAsync(errorResult.ToJsonStr());
                 await writer.FlushAsync();
@@ -311,10 +303,7 @@ namespace GptWeb.DotNet.Api.Controllers
                 _logger.LogError("获取相应流失效，{reqMsg},{responseMsg}",
                     request.ToJsonStr(),
                     result.ToJsonStr());
-                var errorResult = new BaseGptWebDto<string>()
-                {
-                    Message = "服务异常, response stream is null"
-                };
+                var errorResult = new BaseGptWebDto<string>("服务异常, response stream is null");
 
                 await writer.WriteLineAsync(errorResult.ToJsonStr());
                 await writer.FlushAsync();
@@ -440,6 +429,7 @@ namespace GptWeb.DotNet.Api.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost("resource")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetResourceAsync()
         {
             var refUrl = HttpContext.Request.Headers.Referer + "";
@@ -451,7 +441,7 @@ namespace GptWeb.DotNet.Api.Controllers
             }
 
             var resultDto = await _webConfigService.GetResourceByHostAsync(host);
-            var result = new BaseGptWebDto<GetResourceByHostDto>()
+            var result = new BaseGptWebDto<GetResourceByHostDto>(null)
             {
                 Data = resultDto,
                 ResultCode = KdyResultCode.Success,

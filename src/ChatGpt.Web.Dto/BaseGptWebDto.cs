@@ -8,6 +8,11 @@ namespace ChatGpt.Web.Dto
     /// </summary>
     public class BaseGptWebDto<TData>
     {
+        public BaseGptWebDto(string? message)
+        {
+            Message = message;
+        }
+
         /// <summary>
         /// 消息
         /// </summary>

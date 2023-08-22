@@ -60,7 +60,6 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
         /// <returns></returns>
         public async Task<KdyResult> CreateAndUpdateCodeTypeAsync(CreateAndUpdateCodeTypeInput input)
         {
-            //todo:这里的执行问题
             var anyQuery = await _activationCodeTypeV2Repository.GetQueryableAsync();
             anyQuery = anyQuery.Where(a => a.CodeName == input.CardTypeName);
             if (input.Id.HasValue)
@@ -68,6 +67,10 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
                 anyQuery = anyQuery.Where(a => a.Id != input.Id);
             }
 
+            if (await _activationCodeTypeV2Repository.AnyAsync(anyQuery))
+            {
+                return KdyResult.Error(KdyResultCode.Error, "已存在，操作失败");
+            }
 
             var supportModelItems = new List<SupportModeItem>();
             foreach (var item in input.SupportModelGroupNameItems)
@@ -148,6 +151,11 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
         public async Task<KdyResult<QueryPageDto<QueryPageActivationCodeDto>>> QueryPageActivationCodeAsync(QueryPageActivationCodeInput input)
         {
             var query = await _activationCodeRepository.GetQueryableAsync();
+            if (string.IsNullOrEmpty(input.KeyWord) == false)
+            {
+                query = query.Where(a => a.CardNo.Contains(input.KeyWord));
+            }
+
             var pageResult = await _activationCodeRepository.QueryPageListAsync(query, input.Page, input.PageSize);
             var result = new QueryPageDto<QueryPageActivationCodeDto>()
             {
@@ -156,6 +164,12 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
                     BaseMapper.Map<IReadOnlyList<ActivationCode>, IReadOnlyList<QueryPageActivationCodeDto>>(pageResult
                         .Items)
             };
+
+            var allCodeType = await _activationCodeTypeV2Repository.GetAllListAsync();
+            foreach (var item in result.Items)
+            {
+                item.CodeTypeName = allCodeType.FirstOrDefault(a => a.Id == item.CodyTypeId)?.CodeName;
+            }
             return KdyResult.Success(result);
         }
 
