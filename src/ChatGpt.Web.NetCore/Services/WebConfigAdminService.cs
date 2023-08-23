@@ -61,18 +61,13 @@ namespace ChatGpt.Web.NetCore.Services
         public async Task<KdyResult> CreateAndUpdateWebConfigAsync(CreateAndUpdateWebConfigInput input)
         {
             var anyQuery = await _gptWebConfigRepository.GetQueryableAsync();
-            if (string.IsNullOrEmpty(input.SubDomainHost) == false)
+            anyQuery = string.IsNullOrEmpty(input.SubDomainHost) == false ? 
+                anyQuery.Where(a => a.SubDomainHost == input.SubDomainHost) : 
+                anyQuery.Where(a => string.IsNullOrEmpty(a.SubDomainHost));
+
+            if (input.Id.HasValue)
             {
-                anyQuery = anyQuery.Where(a => a.SubDomainHost == input.SubDomainHost);
-                if (input.Id.HasValue)
-                {
-                    anyQuery = anyQuery.Where(a => a.Id != input.Id);
-                }
-            }
-            else
-            {
-                //检查默认配置
-                anyQuery = anyQuery.Where(a => string.IsNullOrEmpty(a.SubDomainHost));
+                anyQuery = anyQuery.Where(a => a.Id != input.Id);
             }
 
             if (await _queryableExecute.AnyAsync(anyQuery))
