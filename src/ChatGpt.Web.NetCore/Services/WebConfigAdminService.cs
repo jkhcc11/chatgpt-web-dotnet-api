@@ -18,13 +18,16 @@ namespace ChatGpt.Web.NetCore.Services
     {
         private readonly IGptWebConfigRepository _gptWebConfigRepository;
         private readonly IdGenerateExtension _idGenerateExtension;
+        private readonly IQueryableExecute _queryableExecute;
 
         public WebConfigAdminService(IMapper baseMapper, IdGenerateExtension baseIdGenerate,
-            IGptWebConfigRepository gptWebConfigRepository, IdGenerateExtension idGenerateExtension)
+            IGptWebConfigRepository gptWebConfigRepository, IdGenerateExtension idGenerateExtension,
+            IQueryableExecute queryableExecute)
             : base(baseMapper, baseIdGenerate)
         {
             _gptWebConfigRepository = gptWebConfigRepository;
             _idGenerateExtension = idGenerateExtension;
+            _queryableExecute = queryableExecute;
         }
 
         /// <summary>
@@ -72,7 +75,7 @@ namespace ChatGpt.Web.NetCore.Services
                 anyQuery = anyQuery.Where(a => string.IsNullOrEmpty(a.SubDomainHost));
             }
 
-            if (await _gptWebConfigRepository.AnyAsync(anyQuery))
+            if (await _queryableExecute.AnyAsync(anyQuery))
             {
                 return KdyResult.Error(KdyResultCode.Error, "已存在，操作失败");
             }

@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace ChatGpt.Web.BaseInterface
@@ -63,13 +65,12 @@ namespace ChatGpt.Web.BaseInterface
         /// 是否存在
         /// </summary>
         /// <returns></returns>
-        Task<bool> AnyAsync(IQueryable<TEntity> query);
-
+        Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate);
 
         /// <summary>
         /// 列表
         /// </summary>
         /// <returns></returns>
-        Task<IReadOnlyList<TEntity>> ToListAsync(IQueryable<TEntity> query);
+        Task<IReadOnlyList<TEntity>> ToListAsync();
     }
 }

@@ -3,7 +3,9 @@ using System.Linq;
 using System.Reflection.Emit;
 using System.Threading.Tasks;
 using ChatGpt.Web.BaseInterface;
+using ChatGpt.Web.BaseInterface.Options;
 using ChatGpt.Web.Dto;
+using ChatGpt.Web.Entity;
 using ChatGpt.Web.Entity.ActivationCodeSys;
 using ChatGpt.Web.IRepository.ActivationCodeSys;
 using ChatGpt.Web.IService.ActivationCodeSys;
@@ -81,6 +83,12 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
         /// <returns></returns>
         public async Task<KdyResult> CheckCardNoIsValidAsync(string cardNo)
         {
+            if (cardNo.StartsWith(ChatGptWebConfig.CustomKeyPrefix))
+            {
+                //中转前缀key 无需校验
+                return KdyResult.Success();
+            }
+
             var cardInfoCache = await GetCardInfoByCacheAsync(cardNo);
             if (cardInfoCache == null)
             {
@@ -113,6 +121,12 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
         /// <returns></returns>
         public async Task<KdyResult> CheckCardNoIsValidWithFirstAsync(string cardNo)
         {
+            if (cardNo.StartsWith(ChatGptWebConfig.CustomKeyPrefix))
+            {
+                //中转前缀key 无需校验
+                return KdyResult.Success();
+            }
+
             var cardInfoCache = await GetCardInfoByCacheAsync(cardNo);
             if (cardInfoCache == null)
             {

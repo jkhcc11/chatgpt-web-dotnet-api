@@ -27,5 +27,10 @@ namespace ChatGpt.Web.Dto.Dtos.ActivationCodeAdmin
         /// 卡密类型名
         /// </summary>
         public string? CodeTypeName { get; set; }
+
+        /// <summary>
+        /// 是否过期
+        /// </summary>
+        public bool IsExpired { get; set; }
     }
 }

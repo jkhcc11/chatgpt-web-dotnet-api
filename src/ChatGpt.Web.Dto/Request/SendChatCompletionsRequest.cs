@@ -18,7 +18,7 @@ namespace ChatGpt.Web.Dto.Request
         /// 聊天完成时生成的最大令牌数(输出的总长度tokens)
         /// </summary>
         [JsonProperty("max_tokens")]
-        public int MaxTokens { get; set; } = 10;
+        public int? MaxTokens { get; set; }
 
         /// <summary>
         /// 要使用的模型的 ID

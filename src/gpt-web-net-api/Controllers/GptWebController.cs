@@ -40,11 +40,13 @@ namespace GptWeb.DotNet.Api.Controllers
         private readonly ILogger<GptWebController> _logger;
         private readonly IActivationCodeService _activationCodeService;
         private readonly IWebConfigService _webConfigService;
+        private readonly IConfiguration _configuration;
 
         public GptWebController(IOpenAiHttpApi openAiHttpApi, IGptWebMessageRepository webMessageRepository,
             ILogger<GptWebController> logger, IdGenerateExtension idGenerateExtension, IOptions<ChatGptWebConfig> options,
             IPerUseActivationCodeRecordRepository perUseActivationCodeRecordRepository, IActivationCodeService activationCodeService,
-            IWebConfigService webConfigService)
+            IWebConfigService webConfigService,
+            IConfiguration configuration)
         {
             _openAiHttpApi = openAiHttpApi;
             _webMessageRepository = webMessageRepository;
@@ -53,6 +55,7 @@ namespace GptWeb.DotNet.Api.Controllers
             _perUseActivationCodeRecordRepository = perUseActivationCodeRecordRepository;
             _activationCodeService = activationCodeService;
             _webConfigService = webConfigService;
+            _configuration = configuration;
             _chatGptWebConfig = options.Value;
         }
 
@@ -113,6 +116,20 @@ namespace GptWeb.DotNet.Api.Controllers
         public async Task<IActionResult> GetConfigAsync()
         {
             var cardNo = User.GetUserId();
+            if (cardNo.StartsWith(ChatGptWebConfig.CustomKeyPrefix))
+            {
+                return new JsonResult(new BaseGptWebDto<object>(null)
+                {
+                    Data = new
+                    {
+                        expiryTime = "前往中转站点获取",
+                        activedTime = "前往中转站点获取",
+                        canModelStr = "前往中转站点获取"
+                    },
+                    ResultCode = KdyResultCode.Success
+                });
+            }
+
             //卡信息
             var cardInfo = await _activationCodeService.GetCardInfoByCacheAsync(cardNo);
             if (cardInfo == null ||
@@ -155,50 +172,38 @@ namespace GptWeb.DotNet.Api.Controllers
             var writer = new StreamWriter(Response.Body);
 
             var token = User.GetUserId();
-            #region 卡信息
-            var cardInfo = await _activationCodeService.GetCardInfoByCacheAsync(token);
-            if (cardInfo == null)
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
+            #region 卡信息获取
+            CheckCardNoResult checkResult;
+            if (token.StartsWith(ChatGptWebConfig.CustomKeyPrefix))
             {
-                await writer.WriteLineAsync("card info is null");
-                await writer.FlushAsync();
-                return;
-            }
-
-            var codeType = await _activationCodeService.GetCodeTypeByCacheAsync(cardInfo.CodyTypeId);
-            #endregion
-
-            #region 权限校验
-            //权限
-            var isAccess = await _activationCodeService.CheckCardNoIsAccessAsync(cardInfo, codeType, input.ApiModel);
-            if (isAccess.IsSuccess == false)
-            {
-                await writer.WriteLineAsync(new BaseGptWebDto<string?>(isAccess.Msg)
-                {
-                    ResultCode = KdyResultCode.Forbidden
-                }.ToJsonStr());
-                await writer.FlushAsync();
-                return;
-            }
-
-            //权限校验完后 获取信息
-            var supportModelItem = codeType.SupportModelItems.First(a => a.ModeId == input.ApiModel);
-            var maxCountItem =
-                codeType.MaxCountItems?.FirstOrDefault(a => a.ModeGroupName == supportModelItem.ModeGroupName);
-
-            //次数
-            KdyResult checkTimes;
-            if (codeType.IsEveryDayResetCount)
-            {
-                checkTimes = await _activationCodeService.CheckTodayCardNoTimesAsync(cardInfo, codeType, supportModelItem);
+                checkResult = await CheckWithCustomHostAsync(token);
             }
             else
             {
-                checkTimes = await _activationCodeService.CheckCardNoTimesAsync(cardInfo, codeType, supportModelItem);
+                checkResult = await CheckWithActivationCodeAsync(token, input.ApiModel);
             }
 
-            if (checkTimes.IsSuccess == false)
+            if (checkResult.IsSuccess == false)
             {
-                await writer.WriteLineAsync(new BaseGptWebDto<string?>(checkTimes.Msg)
+                await writer.WriteLineAsync(new BaseGptWebDto<string?>(checkResult.Msg)
+                {
+                    ResultCode = KdyResultCode.Forbidden
+                }.ToJsonStr());
+                await writer.FlushAsync();
+                return;
+            }
+
+            var maxCountItem = checkResult.MaxCountItem;
+            var keyItem = checkResult.KeyItem;
+            var supportModelItem = checkResult.SupportModeItem;
+
+            if (keyItem == null ||
+                supportModelItem == null)
+            {
+                await writer.WriteLineAsync(new BaseGptWebDto<string?>("系统异常,code:keyItem is null")
                 {
                     ResultCode = KdyResultCode.Forbidden
                 }.ToJsonStr());
@@ -207,19 +212,6 @@ namespace GptWeb.DotNet.Api.Controllers
             }
             #endregion
 
-            var stopWatch = new Stopwatch();
-            stopWatch.Start();
-            #region 根据模型组选择对应的api key
-            var keyItems = _chatGptWebConfig.ApiKeys
-                  .Where(a => a.ModelGroupName == supportModelItem.ModeGroupName)
-                  .ToList();
-            if (keyItems.Any() == false)
-            {
-                keyItems = _chatGptWebConfig.ApiKeys;
-            }
-            #endregion
-
-            var keyItem = keyItems.RandomList();
             var isFirst = string.IsNullOrEmpty(input.Options.ParentMessageId);
             var reqMessages = new List<SendChatCompletionsMessageItem>()
             {
@@ -235,14 +227,19 @@ namespace GptWeb.DotNet.Api.Controllers
             }
 
             reqMessages.Add(new("user", input.Prompt));
+
+            var maxResponseToken = maxCountItem?.MaxResponseToken;
             var request = new SendChatCompletionsRequest(reqMessages)
             {
                 Stream = true,
                 Model = input.ApiModel,
                 TopP = input.TopP,
                 Temperature = input.Temperature,
-                MaxTokens = maxCountItem?.MaxResponseToken ?? 1000
             };
+            if (maxResponseToken is > 0)
+            {
+                request.MaxTokens = maxResponseToken.Value;
+            }
 
             if (isFirst == false)
             {
@@ -591,6 +588,84 @@ namespace GptWeb.DotNet.Api.Controllers
             };
 
             await _webMessageRepository.CreateAsync(assistantMessage);
+        }
+
+        /// <summary>
+        /// 自有卡密校验
+        /// </summary>
+        /// <returns></returns>
+        private async Task<CheckCardNoResult> CheckWithActivationCodeAsync(string cardNo, string apiModel)
+        {
+            var cardInfo = await _activationCodeService.GetCardInfoByCacheAsync(cardNo);
+            if (cardInfo == null)
+            {
+                return CheckCardNoResult.Error("card is null");
+            }
+
+            var codeType = await _activationCodeService.GetCodeTypeByCacheAsync(cardInfo.CodyTypeId);
+
+            #region 权限校验
+            //权限
+            var isAccess = await _activationCodeService.CheckCardNoIsAccessAsync(cardInfo, codeType, apiModel);
+            if (isAccess.IsSuccess == false)
+            {
+                return CheckCardNoResult.Error(isAccess.Msg);
+            }
+
+            //权限校验完后 获取信息
+            var supportModelItem = codeType.SupportModelItems.First(a => a.ModeId == apiModel);
+            var maxCountItem = codeType.GetMaxCountItems().FirstOrDefault(a => a.ModeGroupName == supportModelItem.ModeGroupName);
+
+            //次数
+            KdyResult checkTimes;
+            if (codeType.IsEveryDayResetCount)
+            {
+                checkTimes = await _activationCodeService.CheckTodayCardNoTimesAsync(cardInfo, codeType, supportModelItem);
+            }
+            else
+            {
+                checkTimes = await _activationCodeService.CheckCardNoTimesAsync(cardInfo, codeType, supportModelItem);
+            }
+
+            if (checkTimes.IsSuccess == false)
+            {
+                return CheckCardNoResult.Error(checkTimes.Msg);
+            }
+            #endregion
+
+            #region 根据模型组选择对应的api key
+            var keyItems = _chatGptWebConfig.ApiKeys
+                .Where(a => a.ModelGroupName == supportModelItem.ModeGroupName)
+                .ToList();
+            if (keyItems.Any() == false)
+            {
+                keyItems = _chatGptWebConfig.ApiKeys;
+            }
+
+            var keyItem = keyItems.RandomList();
+            #endregion
+
+            return CheckCardNoResult.Success(maxCountItem, keyItem, supportModelItem);
+        }
+
+        /// <summary>
+        /// 自定义卡密校验
+        /// </summary>
+        /// <returns></returns>
+        private async Task<CheckCardNoResult> CheckWithCustomHostAsync(string cardNo)
+        {
+            await Task.CompletedTask;
+            return CheckCardNoResult.Success(new MaxCountItem("custom", ChatGptWebConfig.CustomApiHostMax)
+            {
+                MaxHistoryCount = ChatGptWebConfig.CustomApiHostMax,
+                MaxRequestToken = ChatGptWebConfig.CustomApiHostMax
+            },
+                new ApiKeyItem()
+                {
+                    ApiKey = cardNo,
+                    OpenAiBaseHost = _configuration.GetValue<string>(ChatGptWebConfig.CustomApiHostKey)
+                },
+                new SupportModeItem("custom", "custom"));
         }
         #endregion
 

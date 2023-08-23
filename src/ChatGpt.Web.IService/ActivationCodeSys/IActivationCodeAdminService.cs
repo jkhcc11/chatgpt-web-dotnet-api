@@ -23,7 +23,7 @@ namespace ChatGpt.Web.IService.ActivationCodeSys
         Task<KdyResult> CreateAndUpdateCodeTypeAsync(CreateAndUpdateCodeTypeInput input);
 
         /// <summary>
-        /// 删除卡密
+        /// 删除卡类型
         /// </summary>
         /// <returns></returns>
         Task<KdyResult> DeleteCodeTypeAsync(long id);

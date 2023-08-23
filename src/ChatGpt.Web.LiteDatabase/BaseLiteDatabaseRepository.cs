@@ -4,7 +4,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using ChatGpt.Web.BaseInterface;
-using ChatGpt.Web.BaseInterface.Extensions;
 using LiteDB;
 
 namespace ChatGpt.Web.LiteDatabase
@@ -110,15 +109,8 @@ namespace ChatGpt.Web.LiteDatabase
         /// <returns></returns>
         public virtual async Task<QueryPageDto<TEntity>> QueryPageListAsync(IQueryable<TEntity> query, int page, int pageSize)
         {
-            var predicate = query.ToExpressionPredicate();
-            var dbQuery = DbCollection.Query();
-            if (predicate != null)
-            {
-                dbQuery = dbQuery.Where(predicate);
-            }
-
-            var total = dbQuery.LongCount();
-            var allData = dbQuery
+            var total = query.LongCount();
+            var allData = query
                 .OrderByDescending(a=>a.CreatedTime)
                 .Skip((page - 1) * pageSize)
                 .ToList();
@@ -149,34 +141,22 @@ namespace ChatGpt.Web.LiteDatabase
         /// 是否存在
         /// </summary>
         /// <returns></returns>
-        public async Task<bool> AnyAsync(IQueryable<TEntity> query)
+        public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate)
         {
-            var predicate = query.ToExpressionPredicate();
-            var dbQuery = DbCollection.Query();
-            if (predicate != null)
-            {
-                dbQuery = dbQuery.Where(predicate);
-            }
-
             await Task.CompletedTask;
-            return dbQuery.Exists();
+            return DbCollection.Query()
+                .Where(predicate)
+                .Exists();
         }
 
         /// <summary>
         /// 列表
         /// </summary>
         /// <returns></returns>
-        public async Task<IReadOnlyList<TEntity>> ToListAsync(IQueryable<TEntity> query)
+        public async Task<IReadOnlyList<TEntity>> ToListAsync()
         {
             await Task.CompletedTask;
-            var predicate = query.ToExpressionPredicate();
-            var dbQuery = DbCollection.Query();
-            if (predicate != null)
-            {
-                dbQuery = dbQuery.Where(predicate);
-            }
-
-            return dbQuery.ToList();
+            return DbCollection.Query().ToList();
         }
     }
 }

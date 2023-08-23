@@ -57,54 +57,5 @@ namespace ChatGpt.Web.BaseInterface.Extensions
         {
             return JsonConvert.DeserializeObject<T>(temp);
         }
-
-        /// <summary>
-        /// Query转Lambda表达式
-        /// </summary>
-        /// <returns></returns>
-        public static Expression<Func<TEntity, bool>>? ToExpressionPredicate<TEntity>(this IQueryable<TEntity> query)
-        {
-            Expression<Func<TEntity, bool>>? predicate = null;
-
-            if (query.Expression is MethodCallExpression methodCallExpression
-                && methodCallExpression.Method.Name == "Where")
-            {
-                var arguments = methodCallExpression.Arguments;
-                var lambdaExpressions = new List<LambdaExpression>();
-
-                foreach (var argument in arguments)
-                {
-                    if (argument is UnaryExpression unaryExpression
-                        && unaryExpression.Operand is LambdaExpression lambdaExpression)
-                    {
-                        lambdaExpressions.Add(lambdaExpression);
-                    }
-                }
-
-                if (lambdaExpressions.Count > 0)
-                {
-                    predicate = (Expression<Func<TEntity, bool>>)lambdaExpressions.Aggregate((expr1, expr2) =>
-                        Expression.Lambda<Func<TEntity, bool>>(
-                            Expression.AndAlso(expr1.Body, expr2.Body),
-                            expr1.Parameters[0]
-                        )
-                    );
-                }
-            }
-
-            return predicate;
-
-            //Expression<Func<TEntity, bool>>? predicate = null;
-
-            //if (query.Expression is MethodCallExpression methodCallExpression
-            //    && methodCallExpression.Method.Name == "Where"
-            //    && methodCallExpression.Arguments[1] is UnaryExpression unaryExpression
-            //    && unaryExpression.Operand is LambdaExpression lambdaExpression)
-            //{
-            //    predicate = (Expression<Func<TEntity, bool>>)lambdaExpression;
-            //}
-
-            //return predicate;
-        }
     }
 }

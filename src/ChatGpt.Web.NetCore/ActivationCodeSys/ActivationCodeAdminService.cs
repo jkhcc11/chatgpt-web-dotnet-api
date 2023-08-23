@@ -21,14 +21,17 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
         private readonly IActivationCodeRepository _activationCodeRepository;
         private readonly IActivationCodeTypeV2Repository _activationCodeTypeV2Repository;
         private readonly IdGenerateExtension _idGenerateExtension;
+        private readonly IQueryableExecute _queryableExecute;
 
         public ActivationCodeAdminService(IMapper baseMapper, IdGenerateExtension baseIdGenerate,
             IActivationCodeRepository activationCodeRepository, IActivationCodeTypeV2Repository activationCodeTypeV2Repository,
-            IdGenerateExtension idGenerateExtension) : base(baseMapper, baseIdGenerate)
+            IdGenerateExtension idGenerateExtension,
+            IQueryableExecute queryableExecute) : base(baseMapper, baseIdGenerate)
         {
             _activationCodeRepository = activationCodeRepository;
             _activationCodeTypeV2Repository = activationCodeTypeV2Repository;
             _idGenerateExtension = idGenerateExtension;
+            _queryableExecute = queryableExecute;
         }
 
         /// <summary>
@@ -67,7 +70,7 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
                 anyQuery = anyQuery.Where(a => a.Id != input.Id);
             }
 
-            if (await _activationCodeTypeV2Repository.AnyAsync(anyQuery))
+            if (await _queryableExecute.AnyAsync(anyQuery))
             {
                 return KdyResult.Error(KdyResultCode.Error, "已存在，操作失败");
             }
@@ -93,7 +96,7 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
                         {
                             MaxHistoryCount = a.MaxHistoryCount,
                             MaxRequestToken = a.MaxRequestTokens,
-                            MaxResponseToken = a.MaxResponseTokens ?? 500
+                            MaxResponseToken = a.MaxResponseTokens
                         })
                         .ToList();
                 }
@@ -120,7 +123,7 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
                     {
                         MaxHistoryCount = a.MaxHistoryCount,
                         MaxRequestToken = a.MaxRequestTokens,
-                        MaxResponseToken = a.MaxResponseTokens ?? 500
+                        MaxResponseToken = a.MaxResponseTokens
                     })
                     .ToList();
             }
@@ -134,12 +137,18 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
         }
 
         /// <summary>
-        /// 删除卡密
+        /// 删除卡类型
         /// </summary>
         /// <returns></returns>
         public async Task<KdyResult> DeleteCodeTypeAsync(long id)
         {
             var entity = await _activationCodeTypeV2Repository.GetEntityByIdAsync(id);
+            var anyActivationCode = await _activationCodeRepository.AnyAsync(a => a.CodyTypeId == entity.Id);
+            if (anyActivationCode)
+            {
+               return KdyResult.Error(KdyResultCode.Error, "失败,已绑定卡密,无法删除");
+            }
+
             var result = await _activationCodeTypeV2Repository.DeleteAsync(entity);
             return result ? KdyResult.Success() : KdyResult.Error(KdyResultCode.Error, "操作失败");
         }
@@ -168,7 +177,21 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
             var allCodeType = await _activationCodeTypeV2Repository.GetAllListAsync();
             foreach (var item in result.Items)
             {
-                item.CodeTypeName = allCodeType.FirstOrDefault(a => a.Id == item.CodyTypeId)?.CodeName;
+                var currentCodeType = allCodeType.FirstOrDefault(a => a.Id == item.CodyTypeId);
+                if (currentCodeType == null)
+                {
+                    continue;
+                }
+
+                item.CodeTypeName = currentCodeType.CodeName;
+                if (item.ActivateTime.HasValue == false)
+                {
+                    continue;
+                }
+
+                //激活过才有过期
+                var expiredTime = item.ActivateTime.Value.AddDays(currentCodeType.ValidDays);
+                item.IsExpired = DateTime.Now > expiredTime;
             }
             return KdyResult.Success(result);
         }
@@ -199,6 +222,11 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
         public async Task<KdyResult> DeleteActivationCodeAsync(long id)
         {
             var entity = await _activationCodeRepository.GetEntityByIdAsync(id);
+            if (entity.ActivateTime.HasValue)
+            {
+                return KdyResult.Error(KdyResultCode.Error, "失败。已激活卡密,无法删除");
+            }
+
             var result = await _activationCodeRepository.DeleteAsync(entity);
             return result ? KdyResult.Success() : KdyResult.Error(KdyResultCode.Error, "操作失败");
         }
@@ -211,7 +239,7 @@ namespace ChatGpt.Web.NetCore.ActivationCodeSys
         {
             var anyCodeTypeQuery = await _activationCodeTypeV2Repository.GetQueryableAsync();
             anyCodeTypeQuery = anyCodeTypeQuery.Where(a => a.CodeName == ActivationCodeTypeV2.RootCodeName);
-            if (await _activationCodeTypeV2Repository.AnyAsync(anyCodeTypeQuery))
+            if (await _queryableExecute.AnyAsync(anyCodeTypeQuery))
             {
                 return KdyResult.Error(KdyResultCode.Error, "已存在,初始化失败,前往DB查看");
             }

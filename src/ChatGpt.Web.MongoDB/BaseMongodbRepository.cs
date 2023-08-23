@@ -4,7 +4,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using ChatGpt.Web.BaseInterface;
-using ChatGpt.Web.BaseInterface.Extensions;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
@@ -103,12 +102,7 @@ namespace ChatGpt.Web.MongoDB
         /// <returns></returns>
         public virtual async Task<QueryPageDto<TEntity>> QueryPageListAsync(IQueryable<TEntity> query, int page, int pageSize)
         {
-            var predicate = query.ToExpressionPredicate();
-            var dbQuery = DbCollection.AsQueryable();
-            if (predicate != null)
-            {
-                dbQuery = dbQuery.Where(predicate);
-            }
+            var dbQuery = ToMongoQueryable(query);
 
             var total = await dbQuery.LongCountAsync();
             var dbResult = await dbQuery
@@ -138,32 +132,25 @@ namespace ChatGpt.Web.MongoDB
         /// 是否存在
         /// </summary>
         /// <returns></returns>
-        public async Task<bool> AnyAsync(IQueryable<TEntity> query)
+        public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate)
         {
-            var predicate = query.ToExpressionPredicate();
             var dbQuery = DbCollection.AsQueryable();
-            if (predicate != null)
-            {
-                dbQuery = dbQuery.Where(predicate);
-            }
-
-            return await dbQuery.AnyAsync();
+            return await dbQuery.AnyAsync(predicate);
         }
 
         /// <summary>
         /// 列表
         /// </summary>
         /// <returns></returns>
-        public async Task<IReadOnlyList<TEntity>> ToListAsync(IQueryable<TEntity> query)
+        public async Task<IReadOnlyList<TEntity>> ToListAsync()
         {
-            var predicate = query.ToExpressionPredicate();
             var dbQuery = DbCollection.AsQueryable();
-            if (predicate != null)
-            {
-                dbQuery = dbQuery.Where(predicate);
-            }
-
             return await dbQuery.ToListAsync();
+        }
+
+        internal IMongoQueryable<TEntity>? ToMongoQueryable(IQueryable<TEntity> query)
+        {
+            return query as IMongoQueryable<TEntity>;
         }
     }
 }

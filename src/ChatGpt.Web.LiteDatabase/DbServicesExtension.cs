@@ -1,4 +1,5 @@
-﻿using ChatGpt.Web.IRepository;
+﻿using ChatGpt.Web.BaseInterface;
+using ChatGpt.Web.IRepository;
 using ChatGpt.Web.IRepository.ActivationCodeSys;
 using ChatGpt.Web.IRepository.MessageHistory;
 using ChatGpt.Web.LiteDatabase.Repository;
@@ -19,6 +20,7 @@ namespace ChatGpt.Web.LiteDatabase
             services.AddTransient<IPerUseActivationCodeRecordRepository, PerUseActivationCodeRecordRepository>();
             services.AddTransient<IActivationCodeTypeV2Repository, ActivationCodeTypeV2Repository>();
             services.AddTransient<IGptWebConfigRepository, GptWebConfigRepository>();
+            services.AddTransient<IQueryableExecute, QueryableExecuteWithLiteDb>();
             return services;
         }
     }
