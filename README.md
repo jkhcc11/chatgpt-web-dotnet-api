@@ -10,16 +10,16 @@
 	- `ApiKey`: ApiKey
 	- `OrgId`: 组织Id  如果账号只有一个组织可不填
 	- `ModelGroupName`： 模型组名，支持根据模型组分开请求apikey
+        - `CustomApiHost`: 自定义ApiHost,例如转发地址等。 默认使用`sk-` 区分站点卡密和自定义卡密。
 - `ChatGptWebConfig:StopFlag` 流式停止标识，默认为`[DONE]`次
 - `ChatGptWebConfig:ApiTimeoutMilliseconds` 请求OpenAi超时时间，单位（毫秒）。默认为 `30000` 
-- `GeneralCodeKey` 生成和导出卡密的密钥，部署时单独设置
+- `RootCardNo` 管理员卡密,用于管理页面使用
 - `SupportDbType` 数据库类型`LiteDB|MongoDB`
 - `ConnectionStrings` 整个节点为DB连接字符串，部署时请修改连接密码
 	- `LiteDb` LiteDb连接字符串
 	- `LiteDbLog` LiteDb日志连接字符串（历史记录太大了分开）
 	- `Mongodb` Mongodb连接字符串
 	- `MongodbDatabaseName` Mongodb数据库名
-- `WebResource` 整个节点为站点配置节点,可根据`appsettings.json` 参考配置
 
 # 新增
 - [x] 卡密功能（未对接卡密平台，直接生成卡密和导出）
@@ -27,9 +27,9 @@
 - [x] 新增访问量统计（百度统计|51la）
 - [x] 支持根据模型请求不同的api key，比如gpt3用key1,gpt4用key2
 - [x] 新增`Mongodb`存储上下文
+- [x] 调整卡密检测逻辑
+- [x] 后台管理
 
 # 待处理
-
 - [ ] 使用`Actions`发布docker 镜像
-- [ ] 调整卡密检测逻辑
-- [ ] 后台管理
+
