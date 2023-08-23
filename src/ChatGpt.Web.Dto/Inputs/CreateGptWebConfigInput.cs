@@ -8,18 +8,11 @@
         /// <summary>
         /// 配置
         /// </summary>
-        public CreateGptWebConfigInput(string generalCodeKey, 
-            string description, string homeBtnHtml)
+        public CreateGptWebConfigInput(string description, string homeBtnHtml)
         {
-            GeneralCodeKey = generalCodeKey;
             Description = description;
             HomeBtnHtml = homeBtnHtml;
         }
-
-        /// <summary>
-        /// 密钥
-        /// </summary>
-        public string GeneralCodeKey { get; set; }
 
         /// <summary>
         /// 子域名Host

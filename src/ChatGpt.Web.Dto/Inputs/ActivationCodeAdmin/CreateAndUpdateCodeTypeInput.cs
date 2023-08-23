@@ -1,37 +1,29 @@
 ﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
-namespace ChatGpt.Web.Dto.Inputs
+namespace ChatGpt.Web.Dto.Inputs.ActivationCodeAdmin
 {
     /// <summary>
-    /// 创建卡类型
+    /// 创建/修改卡密类型
     /// </summary>
-    public class CreateCardTypeInput
+    public class CreateAndUpdateCodeTypeInput
     {
         /// <summary>
-        /// 密钥
+        /// 主键
         /// </summary>
-        public string GeneralCodeKey { get; set; }
-
-        public CreateCardTypeInput(string cardTypeName,
-            List<string> supportModelGroupNameItems,
-            int validDays, string generalCodeKey, List<LimitItem> limitItems)
-        {
-            CardTypeName = cardTypeName;
-            SupportModelGroupNameItems = supportModelGroupNameItems;
-            ValidDays = validDays;
-            GeneralCodeKey = generalCodeKey;
-            LimitItems = limitItems;
-        }
+        public long? Id { get; set; }
 
         /// <summary>
         /// 卡类型名
         /// </summary>
-        public string CardTypeName { get; set; }
+        [Required]
+        public string CardTypeName { get; set; } = "";
 
         /// <summary>
         /// 支持模型组  gpt3|gpt4
         /// </summary>
-        public List<string> SupportModelGroupNameItems { get; set; }
+        [Required]
+        public List<string> SupportModelGroupNameItems { get; set; } = new List<string>();
 
         /// <summary>
         /// 有效天数
@@ -49,7 +41,8 @@ namespace ChatGpt.Web.Dto.Inputs
         /// <summary>
         /// 限制Items
         /// </summary>
-        public List<LimitItem> LimitItems { get; set; }
+        [Required]
+        public List<LimitItem> LimitItems { get; set; } = new List<LimitItem>();
     }
 
     /// <summary>
@@ -57,15 +50,11 @@ namespace ChatGpt.Web.Dto.Inputs
     /// </summary>
     public class LimitItem
     {
-        public LimitItem(string supportModelGroupName)
-        {
-            SupportModelGroupName = supportModelGroupName;
-        }
-
         /// <summary>
         /// 模型组名
         /// </summary>
-        public string SupportModelGroupName { get; set; }
+        [Required]
+        public string SupportModelGroupName { get; set; } = "";
 
         /// <summary>
         /// 每天限制次数

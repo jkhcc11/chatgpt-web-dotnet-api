@@ -1,4 +1,6 @@
-﻿namespace ChatGpt.Web.BaseInterface
+﻿using Newtonsoft.Json;
+
+namespace ChatGpt.Web.BaseInterface
 {
     /// <summary>
     /// Service 统一返回
@@ -159,6 +161,11 @@
         /// <summary>
         /// 未授权
         /// </summary>
-        Unauthorized = 403
+        Unauthorized = 401,
+        
+        /// <summary>
+        /// 无权访问
+        /// </summary>
+        Forbidden = 403,
     }
 }

@@ -1,7 +1,9 @@
 using ChatGpt.Web.BaseInterface;
+using ChatGpt.Web.BaseInterface.Extensions;
 using ChatGpt.Web.BaseInterface.Options;
 using GptWeb.DotNet.Api.JsonConvert;
 using GptWeb.DotNet.Api.ServicesExtensiones;
+using Microsoft.AspNetCore.Authentication;
 using Snowflake.Core;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,10 +14,19 @@ services.AddControllers()
     .AddJsonOptions(conf =>
     {
         conf.JsonSerializerOptions.Converters.Add(new DateTimeConverter());
+        conf.JsonSerializerOptions.Converters.Add(new LongConverter());
     });
+services.AddHttpContextAccessor();
 services.AddHttpClient();
 services.AddMemoryCache();
 services.AddServices();
+services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = CommonExtension.AuthenticationScheme;
+        options.DefaultChallengeScheme = CommonExtension.AuthenticationScheme;
+    })
+    .AddScheme<AuthenticationSchemeOptions, ActivationCodeAuthorizationHandler>(CommonExtension.AuthenticationScheme, null);
+
 
 //»°≈‰÷√◊¢»Î
 var config = builder.Configuration;
@@ -37,7 +48,6 @@ switch (dbType)
 }
 
 services.Configure<ChatGptWebConfig>(config.GetSection("ChatGptWebConfig"));
-services.Configure<WebResourceConfig>(config.GetSection("WebResource"));
 
 var defaultPolicy = "AiCorsPolicy";
 builder.Services.AddCors(options =>
@@ -52,6 +62,8 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+
+app.UseAuthentication();
 // Configure the HTTP request pipeline.
 app.UseAuthorization();
 app.UseCors(defaultPolicy);

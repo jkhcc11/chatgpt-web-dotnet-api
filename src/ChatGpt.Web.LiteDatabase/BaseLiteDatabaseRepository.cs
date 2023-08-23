@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using ChatGpt.Web.BaseInterface;
 using LiteDB;
@@ -100,6 +101,62 @@ namespace ChatGpt.Web.LiteDatabase
         {
             await Task.CompletedTask;
             return DbCollection.FindAll().ToList();
+        }
+
+        /// <summary>
+        /// 分页查询
+        /// </summary>
+        /// <returns></returns>
+        public virtual async Task<QueryPageDto<TEntity>> QueryPageListAsync(IQueryable<TEntity> query, int page, int pageSize)
+        {
+            var total = query.LongCount();
+            var allData = query
+                .OrderByDescending(a=>a.CreatedTime)
+                .Skip((page - 1) * pageSize)
+                .ToList();
+
+            var dbResult = allData
+                .Take(pageSize)
+                .ToList();
+
+            await Task.CompletedTask;
+            return new QueryPageDto<TEntity>()
+            {
+                Total = total,
+                Items = dbResult
+            };
+        }
+
+        /// <summary>
+        /// 获取Queryable
+        /// </summary>
+        /// <returns></returns>
+        public virtual async Task<IQueryable<TEntity>> GetQueryableAsync()
+        {
+            await Task.CompletedTask;
+            return DbCollection.Query().ToEnumerable().AsQueryable();
+        }
+
+        /// <summary>
+        /// 是否存在
+        /// </summary>
+        /// <returns></returns>
+        public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate)
+        {
+            await Task.CompletedTask;
+            return DbCollection.Query()
+                .Where(predicate)
+                .Exists();
+        }
+
+        /// <summary>
+        /// 列表
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IReadOnlyList<TEntity>> ToListAsync()
+        {
+            await Task.CompletedTask;
+            return DbCollection.Query().ToList();
         }
     }
 }

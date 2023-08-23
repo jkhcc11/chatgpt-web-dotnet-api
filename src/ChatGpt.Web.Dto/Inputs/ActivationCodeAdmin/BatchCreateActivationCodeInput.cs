@@ -1,11 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace ChatGpt.Web.Dto.Inputs
+namespace ChatGpt.Web.Dto.Inputs.ActivationCodeAdmin
 {
     /// <summary>
-    /// 生成卡密Input
+    /// 批量创建卡密
     /// </summary>
-    public class BatchGeneralCodeInput
+    public class BatchCreateActivationCodeInput
     {
         /// <summary>
         /// 类型Id

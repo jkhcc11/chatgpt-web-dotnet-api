@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace ChatGpt.Web.BaseInterface
@@ -35,7 +38,7 @@ namespace ChatGpt.Web.BaseInterface
         Task<bool> UpdateAsync(TEntity entity);
 
         /// <summary>
-        /// 删除
+        /// 删除 todo:软删除 目前暂为硬删
         /// </summary>
         /// <returns></returns>
         Task<bool> DeleteAsync(TEntity entity);
@@ -45,5 +48,29 @@ namespace ChatGpt.Web.BaseInterface
         /// </summary>
         /// <returns></returns>
         Task<IReadOnlyList<TEntity>> GetAllListAsync();
+
+        /// <summary>
+        /// 分页查询
+        /// </summary>
+        /// <returns></returns>
+        Task<QueryPageDto<TEntity>> QueryPageListAsync(IQueryable<TEntity> query, int page, int pageSize);
+
+        /// <summary>
+        /// 获取Queryable
+        /// </summary>
+        /// <returns></returns>
+        Task<IQueryable<TEntity>> GetQueryableAsync();
+
+        /// <summary>
+        /// 是否存在
+        /// </summary>
+        /// <returns></returns>
+        Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate);
+
+        /// <summary>
+        /// 列表
+        /// </summary>
+        /// <returns></returns>
+        Task<IReadOnlyList<TEntity>> ToListAsync();
     }
 }

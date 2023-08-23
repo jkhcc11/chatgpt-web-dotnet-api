@@ -5,19 +5,21 @@ using ChatGpt.Web.BaseInterface;
 using ChatGpt.Web.BaseInterface.Extensions;
 using ChatGpt.Web.BaseInterface.Options;
 using ChatGpt.Web.Dto;
+using ChatGpt.Web.Dto.Dtos;
 using ChatGpt.Web.Dto.Inputs;
 using ChatGpt.Web.Dto.Request;
 using ChatGpt.Web.Dto.Response;
-using ChatGpt.Web.Entity;
 using ChatGpt.Web.Entity.ActivationCodeSys;
 using ChatGpt.Web.Entity.Enums;
 using ChatGpt.Web.Entity.MessageHistory;
-using ChatGpt.Web.IRepository;
 using ChatGpt.Web.IRepository.ActivationCodeSys;
 using ChatGpt.Web.IRepository.MessageHistory;
+using ChatGpt.Web.IService;
+using ChatGpt.Web.IService.ActivationCodeSys;
 using ChatGpt.Web.IService.OpenAiApi;
+using GptWeb.DotNet.Api.ServicesExtensiones;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace GptWeb.DotNet.Api.Controllers
@@ -27,42 +29,34 @@ namespace GptWeb.DotNet.Api.Controllers
     /// </summary>
     [ApiController]
     [Route("gpt-web-api")]
-    public class GptWebController : ControllerBase
+    public class GptWebController : BaseController
     {
         private readonly IOpenAiHttpApi _openAiHttpApi;
         private readonly IGptWebMessageRepository _webMessageRepository;
-        private readonly IActivationCodeRepository _activationCodeRepository;
         private readonly IPerUseActivationCodeRecordRepository _perUseActivationCodeRecordRepository;
-        private readonly IActivationCodeTypeV2Repository _activationCodeTypeV2Repository;
-        private readonly IGptWebConfigRepository _gptWebConfigRepository;
 
         private readonly IdGenerateExtension _idGenerateExtension;
-        private readonly IMemoryCache _memoryCache;
         private readonly ChatGptWebConfig _chatGptWebConfig;
         private readonly ILogger<GptWebController> _logger;
-        private readonly WebResourceConfig _webResourceConfig;
-
+        private readonly IActivationCodeService _activationCodeService;
+        private readonly IWebConfigService _webConfigService;
+        private readonly IConfiguration _configuration;
 
         public GptWebController(IOpenAiHttpApi openAiHttpApi, IGptWebMessageRepository webMessageRepository,
-            ILogger<GptWebController> logger, IdGenerateExtension idGenerateExtension,
-            IActivationCodeRepository activationCodeRepository, IMemoryCache memoryCache,
-            IOptions<ChatGptWebConfig> options,
-            IOptions<WebResourceConfig> recourseOptions,
-            IPerUseActivationCodeRecordRepository perUseActivationCodeRecordRepository,
-            IActivationCodeTypeV2Repository activationCodeTypeV2Repository,
-            IGptWebConfigRepository gptWebConfigRepository)
+            ILogger<GptWebController> logger, IdGenerateExtension idGenerateExtension, IOptions<ChatGptWebConfig> options,
+            IPerUseActivationCodeRecordRepository perUseActivationCodeRecordRepository, IActivationCodeService activationCodeService,
+            IWebConfigService webConfigService,
+            IConfiguration configuration)
         {
             _openAiHttpApi = openAiHttpApi;
             _webMessageRepository = webMessageRepository;
             _logger = logger;
             _idGenerateExtension = idGenerateExtension;
-            _activationCodeRepository = activationCodeRepository;
-            _memoryCache = memoryCache;
             _perUseActivationCodeRecordRepository = perUseActivationCodeRecordRepository;
-            _activationCodeTypeV2Repository = activationCodeTypeV2Repository;
-            _gptWebConfigRepository = gptWebConfigRepository;
+            _activationCodeService = activationCodeService;
+            _webConfigService = webConfigService;
+            _configuration = configuration;
             _chatGptWebConfig = options.Value;
-            _webResourceConfig = recourseOptions.Value;
         }
 
         /// <summary>
@@ -70,6 +64,7 @@ namespace GptWeb.DotNet.Api.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost("session")]
+        [AllowAnonymous]
         public async Task<IActionResult> Session()
         {
             //auth 是否需要验证
@@ -78,7 +73,7 @@ namespace GptWeb.DotNet.Api.Controllers
                 auth = true,
                 model = "ChatGPTAPI",
             };
-            var result = new BaseGptWebDto<object>()
+            var result = new BaseGptWebDto<object>(null)
             {
                 Data = data,
                 ResultCode = KdyResultCode.Success
@@ -92,16 +87,20 @@ namespace GptWeb.DotNet.Api.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost("verify")]
+        [AllowAnonymous]
         public async Task<IActionResult> VerifyAsync(VerifyInput input)
         {
-            var check = await CheckCardNoAsync(input.Token, ActivationCodeTypeV2.DefaultModelId);
+            var check = await _activationCodeService.CheckCardNoIsValidWithFirstAsync(input.Token);
             if (check.IsSuccess == false)
             {
-                return new JsonResult(check);
+                return new JsonResult(new BaseGptWebDto<string?>(check.Msg)
+                {
+                    ResultCode = KdyResultCode.Error
+                });
             }
 
             await Task.CompletedTask;
-            var result = new BaseGptWebDto<string>()
+            var result = new BaseGptWebDto<string>(null)
             {
                 Data = "login success",
                 ResultCode = KdyResultCode.Success
@@ -116,33 +115,35 @@ namespace GptWeb.DotNet.Api.Controllers
         [HttpPost("config")]
         public async Task<IActionResult> GetConfigAsync()
         {
-            //检测Token
-            var check = await CheckRequestTokenAsync(ActivationCodeTypeV2.DefaultModelId);
-            if (check.IsSuccess == false)
+            var cardNo = User.GetUserId();
+            if (cardNo.StartsWith(ChatGptWebConfig.CustomKeyPrefix))
             {
-                return new JsonResult(new BaseGptWebDto<object>()
+                return new JsonResult(new BaseGptWebDto<object>(null)
                 {
-                    Message = check.Message,
-                    ResultCode = KdyResultCode.Error
+                    Data = new
+                    {
+                        expiryTime = "前往中转站点获取",
+                        activedTime = "前往中转站点获取",
+                        canModelStr = "前往中转站点获取"
+                    },
+                    ResultCode = KdyResultCode.Success
                 });
             }
 
-            var cardNo = GetCurrentAuthCardNo();
             //卡信息
-            var cardInfo = await GetCardInfoByCacheAsync(cardNo);
+            var cardInfo = await _activationCodeService.GetCardInfoByCacheAsync(cardNo);
             if (cardInfo == null ||
                 cardInfo.ActivateTime.HasValue == false)
             {
-                return new JsonResult(new BaseGptWebDto<object>()
+                return new JsonResult(new BaseGptWebDto<object>("获取失败")
                 {
-                    Message = "获取失败",
                     ResultCode = KdyResultCode.Error
                 });
             }
 
             //卡类型
-            var cardType = await GetCodeTypeByCacheAsync(cardInfo.CodyTypeId);
-            var result = new BaseGptWebDto<object>()
+            var cardType = await _activationCodeService.GetCodeTypeByCacheAsync(cardInfo.CodyTypeId);
+            var result = new BaseGptWebDto<object>(null)
             {
                 Data = new
                 {
@@ -170,44 +171,47 @@ namespace GptWeb.DotNet.Api.Controllers
             Response.ContentType = "application/octet-stream";
             var writer = new StreamWriter(Response.Body);
 
-            //检测Token
-            var check = await CheckRequestTokenAsync(input.ApiModel);
-            if (check.IsSuccess == false)
-            {
-                await writer.WriteLineAsync(check.ToJsonStr());
-                await writer.FlushAsync();
-                return;
-            }
-
-            var token = GetCurrentAuthCardNo();
-            #region 卡密信息
-            var cardInfo = await GetCardInfoByCacheAsync(token);
-            if (cardInfo == null)
-            {
-                await writer.WriteLineAsync("card info is null");
-                await writer.FlushAsync();
-                return;
-            }
-
-            var codeType = await GetCodeTypeByCacheAsync(cardInfo.CodyTypeId);
-            var supportModelItem = codeType.SupportModelItems.First(a => a.ModeId == input.ApiModel);
-            var maxCountItem =
-                codeType.MaxCountItems?.FirstOrDefault(a => a.ModeGroupName == supportModelItem.ModeGroupName);
-            #endregion
-
+            var token = User.GetUserId();
             var stopWatch = new Stopwatch();
             stopWatch.Start();
-            #region 根据模型组选择对应的api key
-            var keyItems = _chatGptWebConfig.ApiKeys
-                  .Where(a => a.ModelGroupName == supportModelItem.ModeGroupName)
-                  .ToList();
-            if (keyItems.Any() == false)
+
+            #region 卡信息获取
+            CheckCardNoResult checkResult;
+            if (token.StartsWith(ChatGptWebConfig.CustomKeyPrefix))
             {
-                keyItems = _chatGptWebConfig.ApiKeys;
+                checkResult = await CheckWithCustomHostAsync(token);
+            }
+            else
+            {
+                checkResult = await CheckWithActivationCodeAsync(token, input.ApiModel);
+            }
+
+            if (checkResult.IsSuccess == false)
+            {
+                await writer.WriteLineAsync(new BaseGptWebDto<string?>(checkResult.Msg)
+                {
+                    ResultCode = KdyResultCode.Forbidden
+                }.ToJsonStr());
+                await writer.FlushAsync();
+                return;
+            }
+
+            var maxCountItem = checkResult.MaxCountItem;
+            var keyItem = checkResult.KeyItem;
+            var supportModelItem = checkResult.SupportModeItem;
+
+            if (keyItem == null ||
+                supportModelItem == null)
+            {
+                await writer.WriteLineAsync(new BaseGptWebDto<string?>("系统异常,code:keyItem is null")
+                {
+                    ResultCode = KdyResultCode.Forbidden
+                }.ToJsonStr());
+                await writer.FlushAsync();
+                return;
             }
             #endregion
 
-            var keyItem = keyItems.RandomList();
             var isFirst = string.IsNullOrEmpty(input.Options.ParentMessageId);
             var reqMessages = new List<SendChatCompletionsMessageItem>()
             {
@@ -223,14 +227,19 @@ namespace GptWeb.DotNet.Api.Controllers
             }
 
             reqMessages.Add(new("user", input.Prompt));
+
+            var maxResponseToken = maxCountItem?.MaxResponseToken;
             var request = new SendChatCompletionsRequest(reqMessages)
             {
                 Stream = true,
                 Model = input.ApiModel,
                 TopP = input.TopP,
                 Temperature = input.Temperature,
-                MaxTokens = maxCountItem?.MaxResponseToken ?? 1000
             };
+            if (maxResponseToken is > 0)
+            {
+                request.MaxTokens = maxResponseToken.Value;
+            }
 
             if (isFirst == false)
             {
@@ -255,15 +264,12 @@ namespace GptWeb.DotNet.Api.Controllers
                 var requestTokenizer = GPT3Tokenizer.Encode(requestContextSb);
                 if (requestTokenizer.Count > maxRequestToken)
                 {
-                    var errorResult = new BaseGptWebDto<string>()
-                    {
-                        Message = $"系统提示：当前请求超出最大请求字符{maxCountItem?.MaxRequestToken}tokens，当前：{requestTokenizer.Count} tokens. 解决方法如下：\n" +
-                                  "1、尝试关掉上下文开关或减少输入次数\n" +
-                                  "2、新建聊天窗口\n" +
-                                  "3、前往设置页面切换模型（gpt3所有模型不限制）\n" +
-                                  "4、购买卡密，放宽限制\n" +
-                                  "温馨提示：一个汉字算2tokens,一个单词算1tokens"
-                    };
+                    var errorResult = new BaseGptWebDto<string>($"系统提示：当前请求超出最大请求字符{maxCountItem?.MaxRequestToken}tokens，当前：{requestTokenizer.Count} tokens. 解决方法如下：\n" +
+                                                                "1、尝试关掉上下文开关或减少输入次数\n" +
+                                                                "2、新建聊天窗口\n" +
+                                                                "3、前往设置页面切换模型（gpt3所有模型不限制）\n" +
+                                                                "4、购买卡密，放宽限制\n" +
+                                                                "温馨提示：一个汉字算2tokens,一个单词算1tokens");
 
                     await writer.WriteLineAsync(errorResult.ToJsonStr());
                     await writer.FlushAsync();
@@ -282,10 +288,7 @@ namespace GptWeb.DotNet.Api.Controllers
                 _logger.LogError("Gpt返回失败，{reqMsg},{responseMsg}",
                     request.ToJsonStr(),
                     result.ToJsonStr());
-                var errorResult = new BaseGptWebDto<string>()
-                {
-                    Message = $"OpenAi返回\n\n\n{result.Msg}"
-                };
+                var errorResult = new BaseGptWebDto<string>($"OpenAi返回\n\n\n{result.Msg}");
 
                 await writer.WriteLineAsync(errorResult.ToJsonStr());
                 await writer.FlushAsync();
@@ -297,10 +300,7 @@ namespace GptWeb.DotNet.Api.Controllers
                 _logger.LogError("获取相应流失效，{reqMsg},{responseMsg}",
                     request.ToJsonStr(),
                     result.ToJsonStr());
-                var errorResult = new BaseGptWebDto<string>()
-                {
-                    Message = "服务异常, response stream is null"
-                };
+                var errorResult = new BaseGptWebDto<string>("服务异常, response stream is null");
 
                 await writer.WriteLineAsync(errorResult.ToJsonStr());
                 await writer.FlushAsync();
@@ -426,35 +426,23 @@ namespace GptWeb.DotNet.Api.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost("resource")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetResourceAsync()
         {
-            GptWebConfig? currentConfig = null;
-            var allConfig = await _gptWebConfigRepository.GetAllConfigAsync();
             var refUrl = HttpContext.Request.Headers.Referer + "";
+            string? host = null;
             if (string.IsNullOrEmpty(refUrl) == false)
             {
                 //匹配当前的
-                var host = new Uri(refUrl).Host;
-                currentConfig = allConfig.FirstOrDefault(a => a.SubDomainHost == host);
+                host = new Uri(refUrl).Host;
             }
 
-            currentConfig ??= allConfig.FirstOrDefault(a => string.IsNullOrEmpty(a.SubDomainHost));
-
-            var config = _webResourceConfig;
-            var codeType = await _activationCodeTypeV2Repository.GetAllActivationCodeTypeAsync();
-            var freeCodeType = codeType.First(a => a.ValidDays == 999);
-            var cardInfo = await _activationCodeRepository.QueryActivationCodeByTypeAsync(freeCodeType.Id);
-
-            config.FreeCode = cardInfo.First().CardNo;
-            //config.FreeCode4 = cardInfo.First().CardNo;
-            config.Description = currentConfig?.Description ?? "";
-            config.HomeBtnHtml = currentConfig?.HomeBtnHtml ?? "";
-            var result = new BaseGptWebDto<WebResourceConfig>()
+            var resultDto = await _webConfigService.GetResourceByHostAsync(host);
+            var result = new BaseGptWebDto<GetResourceByHostDto>(null)
             {
-                Data = config,
+                Data = resultDto,
                 ResultCode = KdyResultCode.Success,
             };
-            await Task.CompletedTask;
             return new JsonResult(result);
         }
 
@@ -475,7 +463,7 @@ namespace GptWeb.DotNet.Api.Controllers
         private async Task CreateFirstMsgAsync(string userMsg, string assistantContent, string assistantId,
             string request, string response, long duration, string systemMsg = "")
         {
-            var cardNo = GetCurrentAuthCardNo();
+            var cardNo = User.GetUserId();
             var messages = new List<GptWebMessage>();
             var conversationId = _idGenerateExtension.GenerateId();
 
@@ -525,7 +513,6 @@ namespace GptWeb.DotNet.Api.Controllers
                 return result;
             }
 
-
             //当前会话的所有消息
             var currentConversationMessage =
                 await _webMessageRepository.QueryMsgByConversationIdAsync(assistantMessage.ConversationId);
@@ -566,7 +553,7 @@ namespace GptWeb.DotNet.Api.Controllers
         private async Task<GptWebMessage> SaveUserMessage(GptWebMessage parentMsg, string userMsg,
             string request, int tokens)
         {
-            var cardNo = GetCurrentAuthCardNo();
+            var cardNo = User.GetUserId();
             //用户消息
             var userMessage = new GptWebMessage(_idGenerateExtension.GenerateId(), userMsg,
                 MsgType.User, parentMsg.ConversationId, cardNo)
@@ -588,7 +575,7 @@ namespace GptWeb.DotNet.Api.Controllers
         private async Task SaveAssistantContentMessage(GptWebMessage userMessage,
             string assistantId, string assistantContent, string response, int tokens, long duration)
         {
-            var cardNo = GetCurrentAuthCardNo();
+            var cardNo = User.GetUserId();
             //回复消息
             var assistantMessage = new GptWebMessage(_idGenerateExtension.GenerateId(), assistantContent,
                 MsgType.Assistant, userMessage.ConversationId, cardNo)
@@ -604,244 +591,81 @@ namespace GptWeb.DotNet.Api.Controllers
         }
 
         /// <summary>
-        /// 检测CardNo
+        /// 自有卡密校验
         /// </summary>
-        /// <param name="cardNo">卡号</param>
-        /// <param name="modelId">模型Id</param>
         /// <returns></returns>
-        private async Task<BaseGptWebDto<object>> CheckCardNoAsync(string cardNo, string modelId)
+        private async Task<CheckCardNoResult> CheckWithActivationCodeAsync(string cardNo, string apiModel)
         {
-            var cacheValue = await GetCardInfoByCacheAsync(cardNo);
-            if (cacheValue == null)
+            var cardInfo = await _activationCodeService.GetCardInfoByCacheAsync(cardNo);
+            if (cardInfo == null)
             {
-                return new BaseGptWebDto<object>()
-                {
-                    ResultCode = KdyResultCode.Error,
-                    Message = "无效卡密,请确认无误"
-                };
+                return CheckCardNoResult.Error("card is null");
             }
 
-            if (cacheValue.ActivateTime.HasValue == false)
+            var codeType = await _activationCodeService.GetCodeTypeByCacheAsync(cardInfo.CodyTypeId);
+
+            #region 权限校验
+            //权限
+            var isAccess = await _activationCodeService.CheckCardNoIsAccessAsync(cardInfo, codeType, apiModel);
+            if (isAccess.IsSuccess == false)
             {
-                cacheValue.ActivateTime = DateTime.Now;
-                await _activationCodeRepository.UpdateAsync(cacheValue);
+                return CheckCardNoResult.Error(isAccess.Msg);
             }
 
-            //卡类型
-            var codeType = await GetCodeTypeByCacheAsync(cacheValue.CodyTypeId);
-            var expiryTime = cacheValue.ActivateTime.Value.AddDays(codeType.ValidDays);
-            if (DateTime.Now > expiryTime)
-            {
-                return new BaseGptWebDto<object>()
-                {
-                    ResultCode = KdyResultCode.Error,
-                    Message = "卡密已过期,请续费或重新购买"
-                };
-            }
+            //权限校验完后 获取信息
+            var supportModelItem = codeType.SupportModelItems.First(a => a.ModeId == apiModel);
+            var maxCountItem = codeType.GetMaxCountItems().FirstOrDefault(a => a.ModeGroupName == supportModelItem.ModeGroupName);
 
-            //模型分组信息
-            var supportModelItem = codeType.SupportModelItems.FirstOrDefault(a => a.ModeId == modelId);
-            if (supportModelItem == null)
-            {
-                return new BaseGptWebDto<object>()
-                {
-                    ResultCode = KdyResultCode.Error,
-                    Message = $"当前卡密不支持【{modelId}】,请切换模型或更换卡密" +
-                              $"，当前支持模型：{string.Join(",", codeType.SupportModelItems.Select(a => a.ModeId))}"
-                };
-            }
-
+            //次数
+            KdyResult checkTimes;
             if (codeType.IsEveryDayResetCount)
             {
-                return await CheckTodayCardNoTimesAsync(cardNo, codeType, supportModelItem);
+                checkTimes = await _activationCodeService.CheckTodayCardNoTimesAsync(cardInfo, codeType, supportModelItem);
+            }
+            else
+            {
+                checkTimes = await _activationCodeService.CheckCardNoTimesAsync(cardInfo, codeType, supportModelItem);
             }
 
-            return await CheckCardNoTimesAsync(cardNo, codeType, supportModelItem);
+            if (checkTimes.IsSuccess == false)
+            {
+                return CheckCardNoResult.Error(checkTimes.Msg);
+            }
+            #endregion
+
+            #region 根据模型组选择对应的api key
+            var keyItems = _chatGptWebConfig.ApiKeys
+                .Where(a => a.ModelGroupName == supportModelItem.ModeGroupName)
+                .ToList();
+            if (keyItems.Any() == false)
+            {
+                keyItems = _chatGptWebConfig.ApiKeys;
+            }
+
+            var keyItem = keyItems.RandomList();
+            #endregion
+
+            return CheckCardNoResult.Success(maxCountItem, keyItem, supportModelItem);
         }
 
         /// <summary>
-        /// 检测请求Token
-        /// </summary>
-        /// <param name="modelId">模型Id</param>
-        /// <returns></returns>
-        private async Task<BaseGptWebDto<object>> CheckRequestTokenAsync(string modelId)
-        {
-            var cardNo = GetCurrentAuthCardNo();
-            if (string.IsNullOrEmpty(cardNo))
-            {
-                return new BaseGptWebDto<object>()
-                {
-                    ResultCode = KdyResultCode.Unauthorized
-                };
-            }
-
-            var check = await CheckCardNoAsync(cardNo, modelId);
-            if (check.IsSuccess == false)
-            {
-                check.ResultCode = KdyResultCode.Unauthorized;
-            }
-
-            return check;
-        }
-
-        /// <summary>
-        /// 获取当前授权卡号
+        /// 自定义卡密校验
         /// </summary>
         /// <returns></returns>
-        private string GetCurrentAuthCardNo()
+        private async Task<CheckCardNoResult> CheckWithCustomHostAsync(string cardNo)
         {
-            var typeIndex = "Bearer ".Length;
-            var token = Request.Headers.Authorization.ToString();
-            if (string.IsNullOrEmpty(token) ||
-                token.Length < typeIndex)
+            await Task.CompletedTask;
+            return CheckCardNoResult.Success(new MaxCountItem("custom", ChatGptWebConfig.CustomApiHostMax)
             {
-                return string.Empty;
-            }
-
-            return token.Remove(0, typeIndex);
-        }
-
-        /// <summary>
-        /// 获取卡信息缓存
-        /// </summary>
-        /// <returns></returns>
-        private async Task<ActivationCode?> GetCardInfoByCacheAsync(string cardNo)
-        {
-            var cacheKey = $"m:cardNo:{cardNo}";
-            var cacheValue = _memoryCache.Get<ActivationCode>(cacheKey);
-            if (cacheValue == null)
-            {
-                cacheValue = await _activationCodeRepository.GetActivationCodeByCardNoAsync(cardNo);
-                if (cacheValue == null)
+                MaxHistoryCount = ChatGptWebConfig.CustomApiHostMax,
+                MaxRequestToken = ChatGptWebConfig.CustomApiHostMax
+            },
+                new ApiKeyItem()
                 {
-                    return default;
-                }
-
-                if (cacheValue.ActivateTime.HasValue)
-                {
-                    //有值卡密30分钟生效
-                    _memoryCache.Set(cacheKey, cacheValue, TimeSpan.FromMinutes(30));
-                }
-            }
-
-            return cacheValue;
-        }
-
-        /// <summary>
-        /// 获取卡密类型缓存
-        /// </summary>
-        /// <returns></returns>
-        private async Task<ActivationCodeTypeV2> GetCodeTypeByCacheAsync(long codeTypeId)
-        {
-            var cacheKey = $"m:codyType:{codeTypeId}";
-            var cacheValue = _memoryCache.Get<ActivationCodeTypeV2>(cacheKey);
-            if (cacheValue == null)
-            {
-                cacheValue = await _activationCodeTypeV2Repository.GetEntityByIdAsync(codeTypeId);
-                _memoryCache.Set(cacheKey, cacheValue);
-            }
-
-            return cacheValue;
-        }
-
-        /// <summary>
-        /// 检查卡密当天请求次数
-        /// </summary>
-        /// <param name="cardNo">卡密</param>
-        /// <param name="codeType">卡配置信息</param>
-        /// <param name="supportModelItem">模型分组信息</param>
-        /// <returns></returns>
-        private async Task<BaseGptWebDto<object>> CheckTodayCardNoTimesAsync(string cardNo
-            , ActivationCodeTypeV2 codeType
-            , SupportModeItem supportModelItem)
-        {
-            if (codeType.IsEveryDayResetCount == false)
-            {
-                return new BaseGptWebDto<object>()
-                {
-                    ResultCode = KdyResultCode.Error,
-                    Message = "检查异常,today,请联系管理员"
-                };
-            }
-
-            //当前模型组最大配置
-            var modelMax = codeType.GetMaxCountItems()
-                .FirstOrDefault(a => a.ModeGroupName == supportModelItem.ModeGroupName);
-            if (modelMax == null)
-            {
-                //未配置不限制
-                return new BaseGptWebDto<object>()
-                {
-                    ResultCode = KdyResultCode.Success
-                };
-            }
-
-            //按次计费
-            var count = await _perUseActivationCodeRecordRepository
-                .CountTimesByGroupNameAsync(cardNo, supportModelItem.ModeGroupName, DateTime.Today);
-            if (count > modelMax.MaxCount)
-            {
-                return new BaseGptWebDto<object>()
-                {
-                    ResultCode = KdyResultCode.Error,
-                    Message = $"模型：{supportModelItem.ModeGroupName},今天额度已耗尽。请更换卡密。\r\n卡密今日最大次数：{modelMax.MaxCount}"
-                };
-            }
-
-            return new BaseGptWebDto<object>()
-            {
-                ResultCode = KdyResultCode.Success
-            };
-        }
-
-        /// <summary>
-        /// 检查卡密请求次数
-        /// </summary>
-        /// <param name="cardNo">卡密</param>
-        /// <param name="codeType">卡配置信息</param>
-        /// <param name="supportModelItem">模型分组信息</param>
-        /// <returns></returns>
-        private async Task<BaseGptWebDto<object>> CheckCardNoTimesAsync(string cardNo
-            , ActivationCodeTypeV2 codeType
-            , SupportModeItem supportModelItem)
-        {
-            if (codeType.IsEveryDayResetCount)
-            {
-                return new BaseGptWebDto<object>()
-                {
-                    ResultCode = KdyResultCode.Error,
-                    Message = "检查异常,cardNo times,请联系管理员"
-                };
-            }
-
-            //当前模型组最大配置
-            var modelMax = codeType.GetMaxCountItems()
-                .FirstOrDefault(a => a.ModeGroupName == supportModelItem.ModeGroupName);
-            if (modelMax == null)
-            {
-                //未配置不限制
-                return new BaseGptWebDto<object>()
-                {
-                    ResultCode = KdyResultCode.Success
-                };
-            }
-
-            //按次计费
-            var count = await _perUseActivationCodeRecordRepository
-                .CountTimesByGroupNameAsync(cardNo, supportModelItem.ModeGroupName, null);
-            if (count > modelMax.MaxCount)
-            {
-                return new BaseGptWebDto<object>()
-                {
-                    ResultCode = KdyResultCode.Error,
-                    Message = $"模型：{supportModelItem.ModeGroupName},额度已耗尽。请更换卡密。\r\n卡密最大次数：{modelMax.MaxCount}"
-                };
-            }
-
-            return new BaseGptWebDto<object>()
-            {
-                ResultCode = KdyResultCode.Success
-            };
+                    ApiKey = cardNo,
+                    OpenAiBaseHost = _configuration.GetValue<string>(ChatGptWebConfig.CustomApiHostKey)
+                },
+                new SupportModeItem("custom", "custom"));
         }
         #endregion
 

@@ -1,14 +1,12 @@
-﻿using System.Text;
-using ChatGpt.Web.BaseInterface;
+﻿using ChatGpt.Web.BaseInterface;
+using ChatGpt.Web.BaseInterface.Extensions;
 using ChatGpt.Web.BaseInterface.Options;
-using ChatGpt.Web.Dto.Inputs;
-using ChatGpt.Web.Entity;
-using ChatGpt.Web.Entity.ActivationCodeSys;
 using ChatGpt.Web.IRepository;
 using ChatGpt.Web.IRepository.ActivationCodeSys;
 using ChatGpt.Web.IRepository.MessageHistory;
 using ChatGpt.Web.LiteDatabase;
 using LiteDB;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -19,7 +17,8 @@ namespace GptWeb.DotNet.Api.Controllers
     /// </summary>
     [ApiController]
     [Route("data-migration")]
-    public class DataMigrationController : Controller
+    [Authorize(Roles = nameof(CommonExtension.CommonRoleName.Root))]
+    public class DataMigrationController : BaseController
     {
         private readonly IActivationCodeRepository _activationCodeRepository;
         private readonly IActivationCodeTypeV2Repository _activationCodeTypeV2Repository;
@@ -27,21 +26,16 @@ namespace GptWeb.DotNet.Api.Controllers
         private readonly IPerUseActivationCodeRecordRepository _perUseActivationCodeRecordRepository;
         private readonly IGptWebMessageRepository _gptWebMessageRepository;
 
-        private readonly IConfiguration _configuration;
-
         private readonly LiteDB.LiteDatabase _liteDatabase;
         private readonly LogLiteDatabase _logLiteDatabase;
 
         public DataMigrationController(IActivationCodeRepository activationCodeRepository,
-            IConfiguration configuration, IdGenerateExtension idGenerateExtension,
-            IOptions<WebResourceConfig> recourseOptions,
-            IActivationCodeTypeV2Repository activationCodeTypeV2Repository,
+            IConfiguration configuration, IActivationCodeTypeV2Repository activationCodeTypeV2Repository,
             IGptWebConfigRepository gptWebConfigRepository,
             IPerUseActivationCodeRecordRepository perUseActivationCodeRecordRepository,
             IGptWebMessageRepository gptWebMessageRepository)
         {
             _activationCodeRepository = activationCodeRepository;
-            _configuration = configuration;
             _activationCodeTypeV2Repository = activationCodeTypeV2Repository;
             _gptWebConfigRepository = gptWebConfigRepository;
 
@@ -61,12 +55,6 @@ namespace GptWeb.DotNet.Api.Controllers
         [HttpGet("card-type")]
         public async Task<IActionResult> MigrationCardAsync(string codeKey)
         {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != codeKey)
-            {
-                return Content("密钥错误");
-            }
-
             var oldRepository = new ChatGpt.Web.LiteDatabase.Repository.ActivationCodeTypeV2Repository(_liteDatabase);
             var oldEntities = await oldRepository.GetAllActivationCodeTypeAsync();
 
@@ -77,12 +65,6 @@ namespace GptWeb.DotNet.Api.Controllers
         [HttpGet("code")]
         public async Task<IActionResult> MigrationCodeAsync(string codeKey)
         {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != codeKey)
-            {
-                return Content("密钥错误");
-            }
-
             var oldRepository = new ChatGpt.Web.LiteDatabase.Repository.ActivationCodeRepository(_liteDatabase);
             var oldEntities = await oldRepository.GetAllListAsync();
 
@@ -93,12 +75,6 @@ namespace GptWeb.DotNet.Api.Controllers
         [HttpGet("code-record")]
         public async Task<IActionResult> MigrationCodeRecordAsync(string codeKey)
         {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != codeKey)
-            {
-                return Content("密钥错误");
-            }
-
             var oldRepository = new ChatGpt.Web.LiteDatabase.Repository.PerUseActivationCodeRecordRepository(_liteDatabase);
             var oldEntities = await oldRepository.GetAllListAsync();
 
@@ -109,12 +85,6 @@ namespace GptWeb.DotNet.Api.Controllers
         [HttpGet("history")]
         public async Task<IActionResult> MigrationHistoryAsync(string codeKey)
         {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != codeKey)
-            {
-                return Content("密钥错误");
-            }
-
             var oldRepository = new ChatGpt.Web.LiteDatabase.Repository.GptWebMessageRepository(_liteDatabase, _logLiteDatabase);
             var oldEntities = await oldRepository.GetAllListAsync();
 
@@ -125,12 +95,6 @@ namespace GptWeb.DotNet.Api.Controllers
         [HttpGet("config")]
         public async Task<IActionResult> MigrationConfigAsync(string codeKey)
         {
-            var generalKey = _configuration.GetValue<string>("GeneralCodeKey");
-            if (generalKey != codeKey)
-            {
-                return Content("密钥错误");
-            }
-
             var oldRepository = new ChatGpt.Web.LiteDatabase.Repository.GptWebConfigRepository(_liteDatabase);
             var oldEntities = await oldRepository.GetAllListAsync();
 

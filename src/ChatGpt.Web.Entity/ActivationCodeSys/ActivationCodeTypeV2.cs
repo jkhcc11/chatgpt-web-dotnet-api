@@ -10,6 +10,7 @@ namespace ChatGpt.Web.Entity.ActivationCodeSys
     /// </summary>
     public class ActivationCodeTypeV2 : BaseEntity<long>
     {
+        public const string RootCodeName = "system";
         public const string Gpt3GroupName = "gpt3";
         /// <summary>
         /// Gpt3 16k
@@ -170,7 +171,10 @@ namespace ChatGpt.Web.Entity.ActivationCodeSys
         /// <summary>
         /// 当前返回最大Token
         /// </summary>
-        public int MaxResponseToken { get; set; }
+        /// <remarks>
+        ///  为空不限制，按官方来
+        /// </remarks>
+        public int? MaxResponseToken { get; set; }
 
         /// <summary>
         /// 最大携带历史记录

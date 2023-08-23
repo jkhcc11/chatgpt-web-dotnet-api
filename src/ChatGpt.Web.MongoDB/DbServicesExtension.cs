@@ -1,4 +1,5 @@
 ﻿using System;
+using ChatGpt.Web.BaseInterface;
 using ChatGpt.Web.IRepository;
 using ChatGpt.Web.IRepository.ActivationCodeSys;
 using ChatGpt.Web.IRepository.MessageHistory;
@@ -25,6 +26,7 @@ namespace ChatGpt.Web.MongoDB
             services.AddTransient<IPerUseActivationCodeRecordRepository, PerUseActivationCodeRecordRepository>();
             services.AddTransient<IActivationCodeTypeV2Repository, ActivationCodeTypeV2Repository>();
             services.AddTransient<IGptWebConfigRepository, GptWebConfigRepository>();
+            services.AddTransient<IQueryableExecute, QueryableExecuteWithMongoDb>();
             return services;
         }
     }

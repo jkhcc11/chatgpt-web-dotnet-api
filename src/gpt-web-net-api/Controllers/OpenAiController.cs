@@ -1,7 +1,9 @@
 using ChatGpt.Web.BaseInterface;
+using ChatGpt.Web.BaseInterface.Extensions;
 using ChatGpt.Web.Dto.Request;
 using ChatGpt.Web.Dto.Response;
 using ChatGpt.Web.IService.OpenAiApi;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GptWeb.DotNet.Api.Controllers
@@ -11,7 +13,8 @@ namespace GptWeb.DotNet.Api.Controllers
     /// </summary>
     [ApiController]
     [Route("gpt-api")]
-    public class OpenAiController : ControllerBase
+    [Authorize(Roles = nameof(CommonExtension.CommonRoleName.Root))]
+    public class OpenAiController : BaseController
     {
         private readonly IOpenAiDashboardApiHttpApi _openAiDashboardApiHttpApi;
         public OpenAiController(IOpenAiDashboardApiHttpApi openAiDashboardApiHttpApi)

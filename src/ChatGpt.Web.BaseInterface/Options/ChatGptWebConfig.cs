@@ -7,6 +7,10 @@ namespace ChatGpt.Web.BaseInterface.Options
     /// </summary>
     public class ChatGptWebConfig
     {
+        public const string CustomApiHostKey = "ChatGptWebConfig:CustomApiHost";
+        public const string CustomKeyPrefix = "sk-";
+        public const int CustomApiHostMax = 999999;
+
         /// <summary>
         /// ApiKey多个
         /// </summary>
