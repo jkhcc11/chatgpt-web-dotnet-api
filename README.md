@@ -32,8 +32,9 @@
 - [x] 使用`Actions`发布docker 镜像
 
 # Docker部署
+
 - 查看 `docker-compose.yml` docker-compose文件
-或使用下面的内容
+或使用下面的内容(注意：挂载文件时，现在当前目录创建一个appsettings.Production.json 文件)
 
 ```
 
@@ -53,4 +54,92 @@ services:
 
 ```
 
+
+# 配置文件例子，管理页直接输入`/admin`(你先使用cardNO授权登录，否则会提示未授权)
+
+- 启用本地数据库 `LiteDB`
+
+```
+
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "ChatGptWebConfig": {
+    "ApiKeys": [
+      {
+        "OpenAiBaseHost": "https://xxxxx6.com",
+        "ApiKey": "sk-xxxxx",
+        "ModelGroupName": "gpt3"
+      },
+      {
+        "OpenAiBaseHost": "https://ai-api-proxyproxy.xxxxx",
+        "ApiKey": "sk-zjR1jGUSbE3iTQJ0OJxxxxx",
+        "ModelGroupName": "gpt3_16"
+      },
+      {
+        "ApiKey": "sk-zjR1jGUSbE3iTQJ0OJxxxxx",
+        //"OrgId": "org-" //可不填，如果只有一个组织时
+        "OpenAiBaseHost": "https://ai-api-proxy.xxxxx", //api反代地址
+        "ModelGroupName": "gpt4"
+      }
+    ], //api key 支持轮询
+    "CustomApiHost": "https://xxxxxxx" //自定义中转地址
+  },
+  "SupportDbType": "LiteDB", //
+  "ConnectionStrings": {
+    "LiteDb": "Filename=gtp-web-netcore-v1.db;Password=123456789;Connection=shared",
+    "LiteDbLog": "Filename=gtp-web-netcore-log.db;Password=123456789;Connection=shared",
+  },
+  "RootCardNo": "xxxxxxxx" //管理员权限卡密 
+}
+
+
+```
+
+- 启用MongoDB数据库 `MongoDB`
+
+```
+
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "ChatGptWebConfig": {
+    "ApiKeys": [
+      {
+        "OpenAiBaseHost": "https://xxxxx6.com",
+        "ApiKey": "sk-xxxxx",
+        "ModelGroupName": "gpt3"
+      },
+      {
+        "OpenAiBaseHost": "https://ai-api-proxyproxy.xxxxx",
+        "ApiKey": "sk-zjR1jGUSbE3iTQJ0OJxxxxx",
+        "ModelGroupName": "gpt3_16"
+      },
+      {
+        "ApiKey": "sk-zjR1jGUSbE3iTQJ0OJxxxxx",
+        //"OrgId": "org-" //可不填，如果只有一个组织时
+        "OpenAiBaseHost": "https://ai-api-proxy.xxxxx", //api反代地址
+        "ModelGroupName": "gpt4"
+      }
+    ], //api key 支持轮询
+    "CustomApiHost": "https://xxxxxxx" //自定义中转地址
+  },
+  "SupportDbType": "MongoDB",
+  "ConnectionStrings": {
+    "Mongodb": "mongodb://localhost:27017",
+    "MongodbDatabaseName": "GptWeb"
+  },
+  "RootCardNo": "xxxxxxxx" //管理员权限卡密 
+}
+
+
+```
 
