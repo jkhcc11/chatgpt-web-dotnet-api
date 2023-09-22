@@ -29,7 +29,28 @@
 - [x] 新增`Mongodb`存储上下文
 - [x] 调整卡密检测逻辑
 - [x] 后台管理
+- [x] 使用`Actions`发布docker 镜像
 
-# 待处理
-- [ ] 使用`Actions`发布docker 镜像
+# Docker部署
+- 查看 `docker-compose.yml` docker-compose文件
+或使用下面的内容
+
+```
+
+version: '3.4'
+
+services:
+  gpt-web-net-api:
+     image: zcypublic/gpt-web-net-api:latest
+     container_name: gpt-web-net-api
+     restart: always
+     environment:
+      URLS: http://*:8899 #监听端口 可更改
+     ports:
+        - 7788:8899 #跟上面的端口对应
+     volumes:
+        - ./appsettings.Production.json:/app/appsettings.Production.json
+
+```
+
 

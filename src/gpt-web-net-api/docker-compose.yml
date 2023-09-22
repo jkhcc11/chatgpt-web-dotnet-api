@@ -6,8 +6,8 @@ services:
      container_name: gpt-web-net-api
      restart: always
      environment:
-      URLS: http://*:8899 #¼àÌı¶Ë¿Ú ¿É¸ü¸Ä
+      URLS: http://*:8899 #ç›‘å¬ç«¯å£ å¯æ›´æ”¹
      ports:
-        - 7788:8899 #¸úÉÏÃæµÄ¶Ë¿Ú¶ÔÓ¦
+        - 7788:8899 #è·Ÿä¸Šé¢çš„ç«¯å£å¯¹åº”
      volumes:
         - ./appsettings.Production.json:/app/appsettings.Production.json
