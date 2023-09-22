@@ -1,0 +1,13 @@
+version: '3.4'
+
+services:
+  gpt-web-net-api:
+     image: zcypublic/gpt-web-net-api:latest
+     container_name: gpt-web-net-api
+     restart: always
+     environment:
+      URLS: http://*:8899 #监听端口 可更改
+     ports:
+        - 7788:8899 #跟上面的端口对应
+     volumes:
+        - ./appsettings.Production.json:/app/appsettings.Production.json
