@@ -1,0 +1,28 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest    #windows-latest 或 macos-latest
+    steps:
+    - uses: actions/checkout@v2 #1、指定环境
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 6.0.x
+    - name: Docker Builder & Push to Docker Hub # 2、生成镜像并push https://github.com/opspresso/action-docker
+      uses: opspresso/action-docker@master
+      with:
+        args: --docker
+      env:
+       USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+       PASSWORD: ${{ secrets.DOCKER_HUB_USERPWD }}
+       DOCKERFILE: "src/gpt-web-net-api/Dockerfile" #不要以 / 开头 从仓库根目录开始算路径
+       IMAGE_NAME: "jkhcc11/netcore.autopublish"
+       TAG_NAME: ${{ github.ref_name }} #action变量 用于获取标签生成版本
+       LATEST: "true"
