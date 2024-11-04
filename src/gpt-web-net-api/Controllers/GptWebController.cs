@@ -168,10 +168,13 @@ namespace GptWeb.DotNet.Api.Controllers
         [HttpPost("chat-process")]
         public async Task ChatProcessAsync(ChatProcessInput input)
         {
+            var requestId = HttpContext.TraceIdentifier;
             Response.ContentType = "application/octet-stream";
             var writer = new StreamWriter(Response.Body);
 
             var token = User.GetUserId();
+
+            long totalTimeElapsed = 0;
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
@@ -279,6 +282,16 @@ namespace GptWeb.DotNet.Api.Controllers
             #endregion
 
             #region 发送聊天请求和异常处理
+            //todo:debug 耗时
+            stopWatch.Stop();
+            totalTimeElapsed += stopWatch.ElapsedMilliseconds;
+            _logger.LogInformation("请求Id:{reqId},DB耗时：{ms} ms",
+                requestId,
+                stopWatch.ElapsedMilliseconds);
+
+            stopWatch.Reset();
+            stopWatch.Start();
+
             var result = await _openAiHttpApi.SendChatCompletionsAsync(keyItem.ApiKey
                 , request
                 , keyItem.OpenAiBaseHost
@@ -306,6 +319,14 @@ namespace GptWeb.DotNet.Api.Controllers
                 await writer.FlushAsync();
                 return;
             }
+
+            totalTimeElapsed += stopWatch.ElapsedMilliseconds;
+            _logger.LogInformation("请求Id:{reqId},发送Chat耗时：{ms} ms",
+                requestId,
+                stopWatch.ElapsedMilliseconds);
+
+            stopWatch.Reset();
+            stopWatch.Start();
             #endregion
 
             await using (result.Data.ResponseStream)
@@ -370,7 +391,11 @@ namespace GptWeb.DotNet.Api.Controllers
                         currentAnswer.Append(currentDelta);
                     }
 
-                    chatId = tempData.ChatId;
+                    //有些中转返回的有些不是标准，会丢失ChatId
+                    if (string.IsNullOrEmpty(tempData.ChatId)==false)
+                    {
+                        chatId = tempData.ChatId;
+                    }
                     #endregion
 
                     var currentResult = new ChatProcessDto()
@@ -387,14 +412,18 @@ namespace GptWeb.DotNet.Api.Controllers
                 }
 
                 stopWatch.Stop();
-                var duration = stopWatch.ElapsedMilliseconds;
+                totalTimeElapsed += stopWatch.ElapsedMilliseconds;
+                _logger.LogInformation("请求Id:{reqId},响应耗时：{ms} ms",
+                    requestId,
+                    stopWatch.ElapsedMilliseconds);
+                //var duration = stopWatch.ElapsedMilliseconds;
                 if (isFirst)
                 {
                     await CreateFirstMsgAsync(input.Prompt, currentAnswer.ToString()
                         , assistantId
                         , request.ToJsonStr()
                         , response
-                        , duration
+                        , totalTimeElapsed
                         , input.SystemMessage);
                 }
                 else
@@ -406,7 +435,7 @@ namespace GptWeb.DotNet.Api.Controllers
                     }
 
                     await SaveAssistantContentMessage(userMessage, assistantId, currentAnswer.ToString(),
-                        response, GPT3Tokenizer.Encode(currentAnswer).Count, duration);
+                        response, GPT3Tokenizer.Encode(currentAnswer).Count, totalTimeElapsed);
 
                 }
 

@@ -124,6 +124,9 @@ namespace ChatGpt.Web.Entity.Enums
                     {
                         supportModelItems.Add(new SupportModeItem("gpt-4", groupName));
                         supportModelItems.Add(new SupportModeItem("gpt-4-0613", groupName));
+                        supportModelItems.Add(new SupportModeItem("gpt-4o", groupName));
+                        supportModelItems.Add(new SupportModeItem("gpt-4o-mini", groupName));
+                        supportModelItems.Add(new SupportModeItem("gpt-4-vision-preview", groupName));
                         break;
                     }
                 case ActivationCodeTypeV2.Gpt316GroupName:
